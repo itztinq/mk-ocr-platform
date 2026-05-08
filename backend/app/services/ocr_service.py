@@ -13,6 +13,9 @@ ALLOWED_CONTENT_TYPES = {
     "image/tiff",
 }
 
+OCR_LANGUAGE = "mkd"
+USED_PREPROCESSING = True
+
 
 async def process_uploaded_image(file: UploadFile) -> dict:
     if file.content_type not in ALLOWED_CONTENT_TYPES:
@@ -30,16 +33,24 @@ async def process_uploaded_image(file: UploadFile) -> dict:
         )
 
     try:
-        extracted_text = extract_text_from_image(content, language="mkd")
-        cleaned_text = clean_ocr_text(extracted_text)
+        raw_text = extract_text_from_image(content, language=OCR_LANGUAGE)
+        cleaned_text = clean_ocr_text(raw_text)
     except Exception as exc:
         raise HTTPException(
             status_code=500,
             detail=f"OCR processing failed: {str(exc)}"
         ) from exc
 
+    cleaned_text = cleaned_text.strip()
+    raw_text = raw_text.strip()
+
     return {
         "filename": file.filename or "uploaded-image",
         "content_type": file.content_type or "application/octet-stream",
-        "text": cleaned_text,
+        "language": OCR_LANGUAGE,
+        "used_preprocessing": USED_PREPROCESSING,
+        "has_text": bool(cleaned_text),
+        "text_length": len(cleaned_text),
+        "raw_text": raw_text,
+        "cleaned_text": cleaned_text,
     }
