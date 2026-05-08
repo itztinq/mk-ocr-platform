@@ -1,20 +1,88 @@
 from pathlib import Path
+import io
 import re
+
+from PIL import Image
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
+IMAGES_DIR = PROJECT_ROOT / "images"
 OCR_OUTPUT_DIR = PROJECT_ROOT / "ocr_output"
 TEXT_OUTPUT_DIR = PROJECT_ROOT / "text"
 
 
-def sanitize_stem(filename: str) -> str:
-    if not filename:
-        return "uploaded-image"
+def sanitize_stem(value: str) -> str:
+    if not value:
+        return "untitled"
 
-    path = Path(filename)
-    stem = path.stem.strip() or "uploaded-image"
-    stem = re.sub(r"[^A-Za-z0-9\u0400-\u04FF_-]+", "_", stem)
-    return stem
+    sanitized = re.sub(r"[^A-Za-z0-9\u0400-\u04FF_-]+", "_", value.strip())
+    sanitized = sanitized.strip("_")
+    return sanitized or "untitled"
+
+
+def format_page_stem(page_number: int) -> str:
+    return f"page_{page_number:03d}"
+
+
+def extract_page_number_from_filename(filename: str) -> int:
+    if not filename:
+        raise ValueError("Filename is missing.")
+
+    name = Path(filename).name
+    match = re.match(r"^page_(\d{3,})\.(jpg|jpeg|png|webp|bmp|tiff)$", name, re.IGNORECASE)
+
+    if not match:
+        raise ValueError(
+            "Invalid filename format. Use names like page_001.jpg, page_002.png, etc."
+        )
+
+    return int(match.group(1))
+
+
+def save_uploaded_page_image(book_name: str, page_number: int, image_bytes: bytes) -> dict:
+    safe_book_name = sanitize_stem(book_name)
+    page_stem = format_page_stem(page_number)
+
+    book_images_dir = IMAGES_DIR / safe_book_name
+    book_images_dir.mkdir(parents=True, exist_ok=True)
+
+    image_path = book_images_dir / f"{page_stem}.jpg"
+
+    image = Image.open(io.BytesIO(image_bytes))
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+
+    image.save(image_path, format="JPEG", quality=95)
+
+    return {
+        "book_name": safe_book_name,
+        "page_image_path": str(image_path.relative_to(PROJECT_ROOT)),
+        "page_filename": image_path.name,
+    }
+
+
+def save_page_ocr_outputs(
+    book_name: str,
+    page_number: int,
+    raw_text: str,
+    cleaned_text: str,
+) -> dict:
+    safe_book_name = sanitize_stem(book_name)
+    page_stem = format_page_stem(page_number)
+
+    book_output_dir = OCR_OUTPUT_DIR / safe_book_name / "pages"
+    book_output_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_file_path = book_output_dir / f"{page_stem}_raw.txt"
+    cleaned_file_path = book_output_dir / f"{page_stem}_cleaned.txt"
+
+    raw_file_path.write_text(raw_text, encoding="utf-8")
+    cleaned_file_path.write_text(cleaned_text, encoding="utf-8")
+
+    return {
+        "raw_output_path": str(raw_file_path.relative_to(PROJECT_ROOT)),
+        "cleaned_output_path": str(cleaned_file_path.relative_to(PROJECT_ROOT)),
+    }
 
 
 def save_ocr_outputs(filename: str, raw_text: str, cleaned_text: str) -> dict:

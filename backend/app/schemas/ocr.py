@@ -3,6 +3,9 @@ from pydantic import BaseModel
 
 class OCRResponse(BaseModel):
     filename: str
+    book_name: str
+    page_number: int
+    page_image_path: str
     content_type: str
     language: str
     used_preprocessing: bool
