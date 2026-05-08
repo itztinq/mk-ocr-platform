@@ -1,6 +1,7 @@
 from fastapi import HTTPException, UploadFile
 
 from ocr_pipeline.ocr_engine import extract_text_from_image
+from ocr_pipeline.text_cleaner import clean_ocr_text
 
 
 ALLOWED_CONTENT_TYPES = {
@@ -30,6 +31,7 @@ async def process_uploaded_image(file: UploadFile) -> dict:
 
     try:
         extracted_text = extract_text_from_image(content, language="mkd")
+        cleaned_text = clean_ocr_text(extracted_text)
     except Exception as exc:
         raise HTTPException(
             status_code=500,
@@ -37,7 +39,7 @@ async def process_uploaded_image(file: UploadFile) -> dict:
         ) from exc
 
     return {
-        "filename": file.filename,
-        "content_type": file.content_type,
-        "text": extracted_text,
+        "filename": file.filename or "uploaded-image",
+        "content_type": file.content_type or "application/octet-stream",
+        "text": cleaned_text,
     }
