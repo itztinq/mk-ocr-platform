@@ -10,3 +10,5 @@ class OCRResponse(BaseModel):
     text_length: int
     raw_text: str
     cleaned_text: str
+    raw_output_path: str
+    cleaned_output_path: str

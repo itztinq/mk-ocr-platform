@@ -1,5 +1,6 @@
 from fastapi import HTTPException, UploadFile
 
+from backend.app.services.file_service import save_ocr_outputs
 from ocr_pipeline.ocr_engine import extract_text_from_image
 from ocr_pipeline.text_cleaner import clean_ocr_text
 
@@ -33,16 +34,18 @@ async def process_uploaded_image(file: UploadFile) -> dict:
         )
 
     try:
-        raw_text = extract_text_from_image(content, language=OCR_LANGUAGE)
-        cleaned_text = clean_ocr_text(raw_text)
+        raw_text = extract_text_from_image(content, language=OCR_LANGUAGE).strip()
+        cleaned_text = clean_ocr_text(raw_text).strip()
+        saved_paths = save_ocr_outputs(
+            filename=file.filename or "uploaded-image",
+            raw_text=raw_text,
+            cleaned_text=cleaned_text,
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=500,
             detail=f"OCR processing failed: {str(exc)}"
         ) from exc
-
-    cleaned_text = cleaned_text.strip()
-    raw_text = raw_text.strip()
 
     return {
         "filename": file.filename or "uploaded-image",
@@ -53,4 +56,6 @@ async def process_uploaded_image(file: UploadFile) -> dict:
         "text_length": len(cleaned_text),
         "raw_text": raw_text,
         "cleaned_text": cleaned_text,
+        "raw_output_path": saved_paths["raw_output_path"],
+        "cleaned_output_path": saved_paths["cleaned_output_path"],
     }
