@@ -6,6 +6,7 @@ class OCRResponse(BaseModel):
     book_name: str
     page_number: int
     page_image_path: str
+    page_image_url: str
     content_type: str
     language: str
     used_preprocessing: bool
@@ -15,3 +16,4 @@ class OCRResponse(BaseModel):
     cleaned_text: str
     raw_output_path: str
     cleaned_output_path: str
+    book_raw_output_path: str

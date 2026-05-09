@@ -4,7 +4,10 @@ from backend.app.schemas.text import (
     SaveCorrectedTextRequest,
     SaveCorrectedTextResponse,
 )
-from backend.app.services.file_service import save_corrected_text
+from backend.app.services.file_service import (
+    rebuild_book_corrected_output,
+    save_corrected_page_text,
+)
 
 router = APIRouter(prefix="/text", tags=["text"])
 
@@ -21,13 +24,18 @@ async def save_corrected_text_file(
             detail="Corrected text cannot be empty."
         )
 
-    saved = save_corrected_text(
-        filename=payload.filename,
+    saved = save_corrected_page_text(
+        book_name=payload.book_name,
+        page_number=payload.page_number,
         corrected_text=corrected_text,
     )
 
+    book_corrected = rebuild_book_corrected_output(book_name=payload.book_name)
+
     return SaveCorrectedTextResponse(
-        filename=payload.filename,
+        book_name=payload.book_name,
+        page_number=payload.page_number,
         saved_path=saved["saved_path"],
+        book_corrected_output_path=book_corrected["book_corrected_output_path"],
         text_length=len(corrected_text),
     )

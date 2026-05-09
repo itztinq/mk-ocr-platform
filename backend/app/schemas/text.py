@@ -2,11 +2,14 @@ from pydantic import BaseModel, Field
 
 
 class SaveCorrectedTextRequest(BaseModel):
-    filename: str = Field(..., min_length=1)
+    book_name: str = Field(..., min_length=1)
+    page_number: int = Field(..., ge=1)
     corrected_text: str = Field(..., min_length=1)
 
 
 class SaveCorrectedTextResponse(BaseModel):
-    filename: str
+    book_name: str
+    page_number: int
     saved_path: str
+    book_corrected_output_path: str
     text_length: int

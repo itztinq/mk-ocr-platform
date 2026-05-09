@@ -1,9 +1,26 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 
-from backend.app.services.file_service import get_output_file
+from backend.app.services.file_service import get_book_output_file, get_output_file
 
 router = APIRouter(prefix="/files", tags=["files"])
+
+
+@router.get("/download/book/{file_type}/{book_name}")
+async def download_book_output_file(file_type: str, book_name: str):
+    try:
+        file_path = get_book_output_file(file_type=file_type, book_name=book_name)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not file_path.exists() or not file_path.is_file():
+        raise HTTPException(status_code=404, detail="Requested book file was not found.")
+
+    return FileResponse(
+        path=file_path,
+        media_type="text/plain",
+        filename=file_path.name,
+    )
 
 
 @router.get("/download/{file_type}/{filename}")

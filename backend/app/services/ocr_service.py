@@ -2,6 +2,7 @@ from fastapi import HTTPException, UploadFile
 
 from backend.app.services.file_service import (
     extract_page_number_from_filename,
+    rebuild_book_raw_output,
     save_page_ocr_outputs,
     save_uploaded_page_image,
 )
@@ -67,6 +68,8 @@ async def process_uploaded_image(
             raw_text=raw_text,
             cleaned_text=cleaned_text,
         )
+
+        book_raw_output = rebuild_book_raw_output(book_name=book_name)
     except Exception as exc:
         raise HTTPException(
             status_code=500,
@@ -78,6 +81,7 @@ async def process_uploaded_image(
         "book_name": saved_image["book_name"],
         "page_number": page_number,
         "page_image_path": saved_image["page_image_path"],
+        "page_image_url": f"/images/{saved_image['book_name']}/{saved_image['page_filename']}",
         "content_type": file.content_type or "application/octet-stream",
         "language": OCR_LANGUAGE,
         "used_preprocessing": USED_PREPROCESSING,
@@ -87,4 +91,5 @@ async def process_uploaded_image(
         "cleaned_text": cleaned_text,
         "raw_output_path": saved_outputs["raw_output_path"],
         "cleaned_output_path": saved_outputs["cleaned_output_path"],
+        "book_raw_output_path": book_raw_output["book_raw_output_path"],
     }
