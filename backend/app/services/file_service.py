@@ -4,6 +4,15 @@ import re
 
 from PIL import Image
 
+EXTENSION_TO_PIL_FORMAT = {
+    ".jpg": "JPEG",
+    ".jpeg": "JPEG",
+    ".png": "PNG",
+    ".webp": "WEBP",
+    ".bmp": "BMP",
+    ".tif": "TIFF",
+    ".tiff": "TIFF",
+}
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 IMAGES_DIR = PROJECT_ROOT / "images"
@@ -39,24 +48,45 @@ def extract_page_number_from_filename(filename: str) -> int:
     return int(match.group(1))
 
 
-def save_uploaded_page_image(book_name: str, page_number: int, image_bytes: bytes) -> dict:
+def save_uploaded_page_image(
+    book_name: str,
+    page_number: int,
+    image_bytes: bytes,
+    original_filename: str,
+) -> dict:
     safe_book_name = sanitize_stem(book_name)
     page_stem = format_page_stem(page_number)
 
     book_images_dir = IMAGES_DIR / safe_book_name
     book_images_dir.mkdir(parents=True, exist_ok=True)
 
-    image_path = book_images_dir / f"{page_stem}.jpg"
+    suffix = Path(original_filename).suffix.lower()
+    if not suffix:
+        raise ValueError("Uploaded file has no extension.")
 
-    image = Image.open(io.BytesIO(image_bytes))
-    if image.mode != "RGB":
-        image = image.convert("RGB")
+    if suffix not in EXTENSION_TO_PIL_FORMAT:
+        raise ValueError(f"Unsupported image extension: {suffix}")
 
-    image.save(image_path, format="JPEG", quality=95)
+    image_path = book_images_dir / f"{page_stem}{suffix}"
+
+    for existing_file in book_images_dir.glob(f"{page_stem}.*"):
+        existing_file.unlink()
+
+    with Image.open(io.BytesIO(image_bytes)) as image:
+        target_format = EXTENSION_TO_PIL_FORMAT[suffix]
+
+        if target_format == "JPEG" and image.mode != "RGB":
+            image = image.convert("RGB")
+
+        save_kwargs = {}
+        if target_format == "JPEG":
+            save_kwargs["quality"] = 95
+
+        image.save(image_path, format=target_format, **save_kwargs)
 
     return {
         "book_name": safe_book_name,
-        "page_image_path": str(image_path.relative_to(PROJECT_ROOT)),
+        "page_image_path": image_path.relative_to(PROJECT_ROOT).as_posix(),
         "page_filename": image_path.name,
     }
 
