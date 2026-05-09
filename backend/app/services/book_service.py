@@ -9,6 +9,7 @@ from backend.app.services.file_service import (
     format_page_stem,
     sanitize_stem,
 )
+from backend.app.services.page_status_service import get_page_status, set_page_status
 
 
 def _read_text_file(path: Path) -> dict:
@@ -24,6 +25,13 @@ def _read_text_file(path: Path) -> dict:
         "path": path.relative_to(PROJECT_ROOT).as_posix(),
         "content": path.read_text(encoding="utf-8"),
     }
+
+
+def _get_page_image(book_images_dir: Path, page_stem: str) -> Path:
+    image_candidates = sorted(book_images_dir.glob(f"{page_stem}.*"))
+    if not image_candidates:
+        raise FileNotFoundError("Page image was not found.")
+    return image_candidates[0]
 
 
 def list_book_pages(book_name: str) -> dict:
@@ -51,6 +59,11 @@ def list_book_pages(book_name: str) -> dict:
         pages.append(
             {
                 "page_number": page_number,
+                "status": get_page_status(
+                    safe_book_name,
+                    page_number,
+                    has_corrected=corrected_path.exists(),
+                ),
                 "page_image_path": image_path.relative_to(PROJECT_ROOT).as_posix(),
                 "page_image_url": f"/images/{safe_book_name}/{image_path.name}",
                 "has_raw": raw_path.exists(),
@@ -76,12 +89,7 @@ def get_book_page(book_name: str, page_number: int) -> dict:
     page_stem = format_page_stem(page_number)
 
     book_images_dir = IMAGES_DIR / safe_book_name
-    image_candidates = sorted(book_images_dir.glob(f"{page_stem}.*"))
-
-    if not image_candidates:
-        raise FileNotFoundError("Page image was not found.")
-
-    image_path = image_candidates[0]
+    image_path = _get_page_image(book_images_dir, page_stem)
 
     raw_path = OCR_OUTPUT_DIR / safe_book_name / "pages" / f"{page_stem}_raw.txt"
     cleaned_path = OCR_OUTPUT_DIR / safe_book_name / "pages" / f"{page_stem}_cleaned.txt"
@@ -90,6 +98,11 @@ def get_book_page(book_name: str, page_number: int) -> dict:
     return {
         "book_name": safe_book_name,
         "page_number": page_number,
+        "status": get_page_status(
+            safe_book_name,
+            page_number,
+            has_corrected=corrected_path.exists(),
+        ),
         "page_image_path": image_path.relative_to(PROJECT_ROOT).as_posix(),
         "page_image_url": f"/images/{safe_book_name}/{image_path.name}",
         "raw_text": _read_text_file(raw_path),
@@ -103,10 +116,7 @@ def save_corrected_text(book_name: str, page_number: int, text: str) -> dict:
     page_stem = format_page_stem(page_number)
 
     book_images_dir = IMAGES_DIR / safe_book_name
-    image_candidates = sorted(book_images_dir.glob(f"{page_stem}.*"))
-
-    if not image_candidates:
-        raise FileNotFoundError("Page image was not found.")
+    _get_page_image(book_images_dir, page_stem)
 
     corrected_dir = TEXT_OUTPUT_DIR / safe_book_name / "pages"
     corrected_dir.mkdir(parents=True, exist_ok=True)
@@ -114,13 +124,25 @@ def save_corrected_text(book_name: str, page_number: int, text: str) -> dict:
     corrected_path = corrected_dir / f"{page_stem}_corrected.txt"
     corrected_path.write_text(text, encoding="utf-8")
 
+    status_result = set_page_status(safe_book_name, page_number, "done")
+
     return {
         "book_name": safe_book_name,
         "page_number": page_number,
         "corrected_text_path": corrected_path.relative_to(PROJECT_ROOT).as_posix(),
         "saved_characters": len(text),
-        "status": "saved",
+        "status": status_result["status"],
     }
+
+
+def update_page_status(book_name: str, page_number: int, status: str) -> dict:
+    safe_book_name = sanitize_stem(book_name)
+    page_stem = format_page_stem(page_number)
+
+    book_images_dir = IMAGES_DIR / safe_book_name
+    _get_page_image(book_images_dir, page_stem)
+
+    return set_page_status(safe_book_name, page_number, status)
 
 
 def get_page_text_file(book_name: str, page_number: int, kind: str) -> Path:
@@ -142,3 +164,48 @@ def get_page_text_file(book_name: str, page_number: int, kind: str) -> Path:
         raise FileNotFoundError(f"{kind.capitalize()} text file was not found.")
 
     return path
+
+
+def export_book_text(book_name: str) -> Path:
+    safe_book_name = sanitize_stem(book_name)
+    book_images_dir = IMAGES_DIR / safe_book_name
+
+    if not book_images_dir.exists() or not book_images_dir.is_dir():
+        raise FileNotFoundError("Book images directory was not found.")
+
+    image_files = sorted(
+        book_images_dir.glob("page_*.*"),
+        key=lambda path: extract_page_number_from_filename(path.name),
+    )
+
+    if not image_files:
+        raise FileNotFoundError("No pages were found for this book.")
+
+    export_dir = TEXT_OUTPUT_DIR / safe_book_name
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    export_path = export_dir / f"{safe_book_name}_export.txt"
+    chunks: list[str] = []
+
+    for image_path in image_files:
+        page_number = extract_page_number_from_filename(image_path.name)
+        page_stem = format_page_stem(page_number)
+
+        raw_path = OCR_OUTPUT_DIR / safe_book_name / "pages" / f"{page_stem}_raw.txt"
+        cleaned_path = OCR_OUTPUT_DIR / safe_book_name / "pages" / f"{page_stem}_cleaned.txt"
+        corrected_path = TEXT_OUTPUT_DIR / safe_book_name / "pages" / f"{page_stem}_corrected.txt"
+
+        if corrected_path.exists():
+            source_path = corrected_path
+        elif cleaned_path.exists():
+            source_path = cleaned_path
+        elif raw_path.exists():
+            source_path = raw_path
+        else:
+            source_path = None
+
+        text = source_path.read_text(encoding="utf-8").strip() if source_path else ""
+        chunks.append(f"--- PAGE {page_number:03d} ---\n{text}")
+
+    export_path.write_text("\n\n".join(chunks).strip() + "\n", encoding="utf-8")
+    return export_path

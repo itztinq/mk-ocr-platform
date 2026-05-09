@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 class BookPageItem(BaseModel):
     page_number: int
+    status: str
     page_image_path: str
     page_image_url: str
     has_raw: bool

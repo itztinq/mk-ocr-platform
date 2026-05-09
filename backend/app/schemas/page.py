@@ -10,6 +10,7 @@ class PageTextBlock(BaseModel):
 class BookPageDetailResponse(BaseModel):
     book_name: str
     page_number: int
+    status: str
     page_image_path: str
     page_image_url: str
     raw_text: PageTextBlock
