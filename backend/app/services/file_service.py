@@ -19,7 +19,6 @@ IMAGES_DIR = PROJECT_ROOT / "images"
 OCR_OUTPUT_DIR = PROJECT_ROOT / "ocr_output"
 TEXT_OUTPUT_DIR = PROJECT_ROOT / "text"
 
-
 def sanitize_stem(value: str) -> str:
     if not value:
         return "untitled"
@@ -28,10 +27,8 @@ def sanitize_stem(value: str) -> str:
     sanitized = sanitized.strip("_")
     return sanitized or "untitled"
 
-
 def format_page_stem(page_number: int) -> str:
     return f"page_{page_number:03d}"
-
 
 def extract_page_number_from_filename(filename: str) -> int:
     if not filename:
@@ -46,7 +43,6 @@ def extract_page_number_from_filename(filename: str) -> int:
         )
 
     return int(match.group(1))
-
 
 def save_uploaded_page_image(
     book_name: str,
@@ -90,7 +86,6 @@ def save_uploaded_page_image(
         "page_filename": image_path.name,
     }
 
-
 def save_page_ocr_outputs(
     book_name: str,
     page_number: int,
@@ -114,7 +109,6 @@ def save_page_ocr_outputs(
         "cleaned_output_path": str(cleaned_file_path.relative_to(PROJECT_ROOT)),
     }
 
-
 def save_corrected_page_text(book_name: str, page_number: int, corrected_text: str) -> dict:
     safe_book_name = sanitize_stem(book_name)
     page_stem = format_page_stem(page_number)
@@ -129,21 +123,30 @@ def save_corrected_page_text(book_name: str, page_number: int, corrected_text: s
         "saved_path": str(corrected_file_path.relative_to(PROJECT_ROOT)),
     }
 
+# Помошна функција за правилно нумеричко сортирање
+def _extract_page_num_from_txt_name(path: Path) -> int:
+    match = re.search(r"page_(\d{3,})", path.name)
+    if match:
+        return int(match.group(1))
+    return 999999
 
-def _read_page_files_sorted(directory: Path, suffix: str) -> list[str]:
+def _read_page_files_sorted(directory: Path, suffix: str, include_page_marker: bool = False) -> list[str]:
     if not directory.exists():
         return []
 
-    files = sorted(directory.glob(f"page_*{suffix}"))
+    files = sorted(directory.glob(f"page_*{suffix}"), key=_extract_page_num_from_txt_name)
     contents = []
 
     for file_path in files:
         text = file_path.read_text(encoding="utf-8").strip()
         if text:
-            contents.append(text)
+            if include_page_marker:
+                page_num_str = re.search(r"page_(\d{3,})", file_path.name).group(1)
+                contents.append(f"--- СТРАНИЦА {page_num_str} ---\n{text}")
+            else:
+                contents.append(text)
 
     return contents
-
 
 def rebuild_book_raw_output(book_name: str) -> dict:
     safe_book_name = sanitize_stem(book_name)
@@ -151,15 +154,14 @@ def rebuild_book_raw_output(book_name: str) -> dict:
     pages_dir = OCR_OUTPUT_DIR / safe_book_name / "pages"
     final_file_path = OCR_OUTPUT_DIR / f"{safe_book_name}_ocr_raw.txt"
 
-    page_texts = _read_page_files_sorted(pages_dir, "_raw.txt")
+    page_texts = _read_page_files_sorted(pages_dir, "_raw.txt", include_page_marker=True)
     combined_text = "\n\n".join(page_texts).strip()
 
     final_file_path.write_text(combined_text, encoding="utf-8")
 
     return {
-        "book_raw_output_path": str(final_file_path.relative_to(PROJECT_ROOT)),
+        "book_raw_output_path": final_file_path.relative_to(PROJECT_ROOT).as_posix(),
     }
-
 
 def rebuild_book_corrected_output(book_name: str) -> dict:
     safe_book_name = sanitize_stem(book_name)
@@ -167,45 +169,14 @@ def rebuild_book_corrected_output(book_name: str) -> dict:
     pages_dir = TEXT_OUTPUT_DIR / safe_book_name / "pages"
     final_file_path = TEXT_OUTPUT_DIR / f"{safe_book_name}_corrected.txt"
 
-    page_texts = _read_page_files_sorted(pages_dir, "_corrected.txt")
+    page_texts = _read_page_files_sorted(pages_dir, "_corrected.txt", include_page_marker=False)
     combined_text = "\n\n".join(page_texts).strip()
 
     final_file_path.write_text(combined_text, encoding="utf-8")
 
     return {
-        "book_corrected_output_path": str(final_file_path.relative_to(PROJECT_ROOT)),
+        "book_corrected_output_path": final_file_path.relative_to(PROJECT_ROOT).as_posix(),
     }
-
-
-def save_ocr_outputs(filename: str, raw_text: str, cleaned_text: str) -> dict:
-    OCR_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    safe_stem = sanitize_stem(filename)
-
-    raw_file_path = OCR_OUTPUT_DIR / f"{safe_stem}_raw.txt"
-    cleaned_file_path = OCR_OUTPUT_DIR / f"{safe_stem}_cleaned.txt"
-
-    raw_file_path.write_text(raw_text, encoding="utf-8")
-    cleaned_file_path.write_text(cleaned_text, encoding="utf-8")
-
-    return {
-        "raw_output_path": str(raw_file_path.relative_to(PROJECT_ROOT)),
-        "cleaned_output_path": str(cleaned_file_path.relative_to(PROJECT_ROOT)),
-    }
-
-
-def save_corrected_text(filename: str, corrected_text: str) -> dict:
-    TEXT_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-
-    safe_stem = sanitize_stem(filename)
-    corrected_file_path = TEXT_OUTPUT_DIR / f"{safe_stem}_corrected.txt"
-
-    corrected_file_path.write_text(corrected_text, encoding="utf-8")
-
-    return {
-        "saved_path": str(corrected_file_path.relative_to(PROJECT_ROOT)),
-    }
-
 
 def get_output_file(file_type: str, filename: str) -> Path:
     safe_stem = sanitize_stem(filename)

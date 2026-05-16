@@ -8,6 +8,7 @@ from backend.app.services.file_service import (
     extract_page_number_from_filename,
     format_page_stem,
     sanitize_stem,
+    rebuild_book_corrected_output,
 )
 from backend.app.services.page_status_service import get_page_status, set_page_status
 
@@ -125,6 +126,8 @@ def save_corrected_text(book_name: str, page_number: int, text: str) -> dict:
     corrected_path.write_text(text, encoding="utf-8")
 
     status_result = set_page_status(safe_book_name, page_number, "done")
+    
+    rebuild_book_corrected_output(safe_book_name)
 
     return {
         "book_name": safe_book_name,
