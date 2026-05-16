@@ -15,7 +15,6 @@ from backend.app.services.job_service import (
     mark_job_running,
 )
 from ocr_pipeline.ocr_engine import extract_text_from_image
-from ocr_pipeline.text_cleaner import clean_ocr_text
 
 
 ALLOWED_CONTENT_TYPES = {
@@ -56,8 +55,11 @@ def process_image_bytes(
         original_filename=filename,
     )
 
-    raw_text = extract_text_from_image(image_bytes, language=OCR_LANGUAGE).strip()
-    cleaned_text = clean_ocr_text(raw_text).strip()
+    ocr_result = extract_text_from_image(image_bytes, OCR_LANGUAGE)
+    raw_text = ocr_result["raw_text"]
+    cleaned_text = ocr_result["cleaned_text"]
+    avg_confidence = ocr_result["avg_confidence"]
+    suspicious_tokens = ocr_result["suspicious_tokens"]
 
     saved_outputs = save_page_ocr_outputs(
         book_name=book_name,
@@ -81,6 +83,8 @@ def process_image_bytes(
         "text_length": len(cleaned_text),
         "raw_text": raw_text,
         "cleaned_text": cleaned_text,
+        "avg_confidence": avg_confidence,
+        "suspicious_tokens": suspicious_tokens,
         "raw_output_path": saved_outputs["raw_output_path"],
         "cleaned_output_path": saved_outputs["cleaned_output_path"],
         "book_raw_output_path": book_raw_output["book_raw_output_path"],
