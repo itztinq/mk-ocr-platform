@@ -2,7 +2,7 @@ export default function ProgressBar({ progress, status, processed, total }) {
   return (
     <div className="progress-section">
       <div className="progress-info">
-        <span>{status === 'completed' ? 'Завршено' : status === 'completed_with_errors' ? 'Завршено со грешки' : 'Обработувам...'}</span>
+        <span>{status === 'completed' ? 'Completed' : status === 'completed_with_errors' ? 'Completed with errors' : 'Processing...'}</span>
         <span>{progress}%</span>
       </div>
       <div className="progress-bar">
@@ -10,7 +10,7 @@ export default function ProgressBar({ progress, status, processed, total }) {
       </div>
       {processed != null && total != null && (
         <div className="progress-info" style={{ marginTop: '0.5rem' }}>
-          <small>{processed} од {total} датотеки</small>
+          <small>{processed} of {total} files</small>
         </div>
       )}
     </div>

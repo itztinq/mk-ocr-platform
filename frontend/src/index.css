@@ -15,7 +15,7 @@
   --text: #0f172a;
   --text-light: #64748b;
   --radius: 12px;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.1);
   --transition: 0.2s ease;
 }
@@ -59,7 +59,12 @@ body {
   font-weight: 700;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
+}
+
+.app-title svg {
+  flex-shrink: 0;
+  opacity: 0.95;
 }
 
 .title-icon { font-size: 2.2rem; }

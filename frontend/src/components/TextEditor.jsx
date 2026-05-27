@@ -16,7 +16,7 @@ export default function TextEditor() {
   const handleCopy = () => {
     const text = pageTexts[activeTab] || '';
     navigator.clipboard.writeText(text);
-    setSaveStatus({ type: 'success', message: 'Копирано!' });
+    setSaveStatus({ type: 'success', message: 'Copied!' });
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
@@ -35,14 +35,14 @@ export default function TextEditor() {
   const handleSave = async () => {
     try {
       await saveCorrectedText();
-      setSaveStatus({ type: 'success', message: '✅ Зачувано' });
+      setSaveStatus({ type: 'success', message: 'Saved' });
     } catch (err) {
-      setSaveStatus({ type: 'error', message: '❌ Грешка: ' + (err.response?.data?.detail || err.message) });
+      setSaveStatus({ type: 'error', message: 'Error: ' + (err.response?.data?.detail || err.message) });
     }
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
-  if (!activePage) return <div className="editor-container"><textarea readOnly placeholder="Избери страница" /></div>;
+  if (!activePage) return <div className="editor-container"><textarea readOnly placeholder="Select page" /></div>;
 
   return (
     <>
@@ -53,14 +53,22 @@ export default function TextEditor() {
           value={pageTexts[activeTab] || ''}
           onChange={handleTextChange}
           readOnly={!isEditable}
-          placeholder="OCR текстот ќе се појави овде..."
+          placeholder="OCR text will appear here..."
           disabled={loadingPage}
         />
         <div className="editor-toolbar">
-          <button className="btn-icon" onClick={handleCopy} title="Копирај текст">📋</button>
-          <button className="btn-icon" onClick={handleDownload} title="Превземи текст">💾</button>
+          <button className="btn btn-secondary" onClick={handleCopy} type="button">
+            Copy
+          </button>
+
+          <button className="btn btn-secondary" onClick={handleDownload} type="button">
+            Download
+          </button>
+
           {isEditable && (
-            <button className="btn btn-success" onClick={handleSave}>💾 Зачувај корекции</button>
+            <button className="btn btn-success" onClick={handleSave} type="button">
+              Save corrections
+            </button>
           )}
         </div>
         {saveStatus && (

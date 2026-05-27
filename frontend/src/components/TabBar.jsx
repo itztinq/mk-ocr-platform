@@ -1,8 +1,8 @@
 export default function TabBar({ activeTab, onTabChange }) {
   const tabs = [
-    { key: 'cleaned', label: '✨ Исчистен текст' },
-    { key: 'raw', label: '📄 Суров OCR' },
-    { key: 'corrected', label: '✏️ Коригиран' },
+    { key: 'cleaned', label: 'Cleaned' },
+    { key: 'raw', label: 'Raw OCR' },
+    { key: 'corrected', label: 'Corrected' },
   ];
 
   return (

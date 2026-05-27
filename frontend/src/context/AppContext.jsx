@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { getBookPages, getPageDetail, saveCorrectedTextApi } from '../api';
 
 const AppContext = createContext();
@@ -30,23 +30,29 @@ export const AppProvider = ({ children }) => {
     try {
       const page = await getPageDetail(book, pageNumber);
       const texts = {
-        raw: page.raw_text.content || '',
-        cleaned: page.cleaned_text.content || '',
-        corrected: page.corrected_text.content || '',
+        raw: page.raw_text?.content || '',
+        cleaned: page.cleaned_text?.content || '',
+        corrected: page.corrected_text?.content || '',
       };
-      // ако нема корегиран текст, копирај го чистиот за почетна вредност во табот "corrected"
-      if (!page.corrected_text.exists && page.cleaned_text.exists) {
+
+      if (!page.corrected_text?.exists && page.cleaned_text?.exists) {
         texts.corrected = page.cleaned_text.content;
       }
       setPageTexts(texts);
-      // активирај соодветен таб
-      if (page.cleaned_text.exists) setActiveTab('cleaned');
-      else if (page.raw_text.exists) setActiveTab('raw');
+
+      if (page.cleaned_text?.exists) setActiveTab('cleaned');
+      else if (page.raw_text?.exists) setActiveTab('raw');
       else setActiveTab('corrected');
     } finally {
       setLoadingPage(false);
     }
   }, [book]);
+
+  useEffect(() => {
+    if (activePage) {
+      loadPageDetail(activePage);
+    }
+  }, [activePage, loadPageDetail]);
 
   const updatePageText = (text) => {
     setPageTexts(prev => ({ ...prev, corrected: text }));
@@ -55,7 +61,6 @@ export const AppProvider = ({ children }) => {
   const saveCorrectedText = async () => {
     if (!book || !activePage) return;
     await saveCorrectedTextApi(book, activePage, pageTexts.corrected);
-    // освежи листа за да се ажурира статусот
     await loadBookPages(book);
   };
 

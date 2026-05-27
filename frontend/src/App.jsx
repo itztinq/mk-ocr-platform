@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ScanText } from 'lucide-react';
 import { AppProvider } from './context/AppContext';
 import UploadSection from './components/UploadSection';
 import EditorSection from './components/EditorSection';
@@ -12,10 +13,10 @@ function App() {
       <header className="app-header">
         <div className="header-content">
           <h1 className="app-title">
-            <span className="title-icon">📖</span>
-            Macedonian OCR
+            <ScanText size={28} strokeWidth={2.2} />
+            <span>Macedonian OCR</span>
           </h1>
-          <p className="app-subtitle">Препознај македонски текст од слики</p>
+          <p className="app-subtitle">Convert scanned documents, screenshots, and images in Macedonian language into editable text formats.</p>
         </div>
       </header>
       <main className="app-container">

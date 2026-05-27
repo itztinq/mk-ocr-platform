@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { getPageDetail } from '../api';
 
 export default function ImageViewer() {
-  const { book, activePage, setPageTexts, loadingPage } = useAppContext();
+  const { book, activePage, loadingPage } = useAppContext();
   const [imageUrl, setImageUrl] = useState('');
   const [error, setError] = useState(false);
 
@@ -11,6 +11,7 @@ export default function ImageViewer() {
     if (!book || !activePage) return;
     let cancelled = false;
     setError(false);
+    
     getPageDetail(book, activePage)
       .then(page => {
         if (cancelled) return;
@@ -22,6 +23,7 @@ export default function ImageViewer() {
         }
       })
       .catch(() => { if (!cancelled) setError(true); });
+      
     return () => { cancelled = true; };
   }, [book, activePage]);
 
@@ -30,7 +32,7 @@ export default function ImageViewer() {
       <div className="image-container">
         <div className="image-placeholder">
           <span className="placeholder-icon">⏳</span>
-          <span>Вчитувам...</span>
+          <span>Loading image preview...</span>
         </div>
       </div>
     );
@@ -39,11 +41,11 @@ export default function ImageViewer() {
   return (
     <div className="image-container">
       {imageUrl ? (
-        <img src={imageUrl} alt="Страница" className="preview-image" />
+        <img src={imageUrl} alt="Scanned Document Page" className="preview-image" />
       ) : (
         <div className="image-placeholder">
           <span className="placeholder-icon">🖼️</span>
-          <span>{error ? 'Грешка при вчитување' : 'Сликата ќе се прикаже овде'}</span>
+          <span>{error ? 'Failed to load image preview' : 'Image preview will appear here'}</span>
         </div>
       )}
     </div>

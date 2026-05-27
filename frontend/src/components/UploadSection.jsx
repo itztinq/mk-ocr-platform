@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
+import { Upload, ImageUp, ScanText, FileEdit, Download } from 'lucide-react';
 import { uploadBatch } from '../api';
 import { useAppContext } from '../context/AppContext';
 import useJobPolling from '../hooks/useJobPolling';
@@ -17,7 +18,7 @@ export default function UploadSection({ onBookProcessed }) {
       await loadBookPages(bookName);
       onBookProcessed();
     } else {
-      alert('Грешка при обработка: ' + (job.errors[0] || 'Непозната грешка'));
+      alert('Error during processing: ' + (job.errors[0] || 'Unknown error'));
     }
     setUploading(false);
     setJobId(null);
@@ -36,98 +37,153 @@ export default function UploadSection({ onBookProcessed }) {
   };
 
   const handleUpload = async () => {
-    if (!bookName.trim()) return alert('Внеси име на книга');
-    if (files.length === 0) return alert('Избери барем една слика');
-    // валидација на имиња
+    if (!bookName.trim()) return alert('Enter book name');
+    if (files.length === 0) return alert('Select at least one image');
+
     for (let f of files) {
       if (!/^page_\d{3,}\.(jpg|jpeg|png|webp|bmp|tiff)$/i.test(f.name)) {
-        alert(`Невалидно име: "${f.name}". Мора да биде page_001.jpg и сл.`);
+        alert(`Invalid name: "${f.name}". Must be page_001.jpg etc.`);
         return;
       }
     }
+
     const formData = new FormData();
     formData.append('book_name', bookName);
     files.forEach(f => formData.append('files', f));
+
     setUploading(true);
+
     try {
       const res = await uploadBatch(formData);
       setJobId(res.data.job_id);
     } catch (err) {
-      alert('Грешка: ' + (err.response?.data?.detail || err.message));
+      alert('Error: ' + (err.response?.data?.detail || err.message));
       setUploading(false);
     }
   };
 
   return (
-    <section className="upload-section">
-      <div className="section-header">
-        <h2>📤 Прикачи слики</h2>
-        <p>Избери повеќе слики и започни OCR обработка</p>
-      </div>
-      <div className="upload-form">
-        <div className="form-group">
-          <label>Име на книга</label>
-          <input
-            type="text"
-            value={bookName}
-            onChange={(e) => setBookName(e.target.value)}
-            placeholder="пр. македонски-роман"
-            className="form-input"
-            disabled={uploading}
-          />
+    <>
+      <section className="how-it-works">
+        <div className="section-header">
+          <h2>How it works</h2>
+          <p>
+            Upload scanned pages, review the extracted text, correct any OCR errors,
+            and download the final cleaned version.
+          </p>
         </div>
-        <div className="form-group">
-          <div
-            className="upload-area"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => e.preventDefault()}
-            onDrop={(e) => {
-              e.preventDefault();
-              const droppedFiles = Array.from(e.dataTransfer.files);
-              setFiles(prev => [...prev, ...droppedFiles]);
-            }}
-          >
-            <span className="upload-icon">📁</span>
-            <span>Кликни или повлечи слики овде</span>
-            <small>page_001.jpg, page_002.png...</small>
+
+        <div className="how-it-works-grid">
+          <div className="how-step">
+            <div className="how-step-icon">
+              <Upload size={18} strokeWidth={2} />
+            </div>
+            <h3>Upload pages</h3>
+            <p>Add one or more scanned images with the correct page filename format.</p>
           </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            multiple
-            accept="image/*"
-            className="file-input"
-            onChange={handleFileSelect}
-          />
+
+          <div className="how-step">
+            <div className="how-step-icon">
+              <ScanText size={18} strokeWidth={2} />
+            </div>
+            <h3>Review OCR</h3>
+            <p>Open each page, compare the OCR text with the scanned image, and inspect the result.</p>
+          </div>
+
+          <div className="how-step">
+            <div className="how-step-icon">
+              <FileEdit size={18} strokeWidth={2} />
+            </div>
+            <h3>Correct and export</h3>
+            <p>Edit mistakes, save corrections, then copy or download the cleaned text.</p>
+          </div>
         </div>
-        <div className="selected-files">
-          {files.map((f, i) => (
-            <span key={i} className="file-badge">
-              {f.name}
-              <span className="remove-file" onClick={() => removeFile(i)}>×</span>
-            </span>
-          ))}
+      </section>
+
+      <section className="upload-section">
+        <div className="section-header">
+          <h2 className="section-title-with-icon">
+            <Upload size={20} strokeWidth={2} />
+            <span>Upload Images</span>
+          </h2>
+          <p>Select multiple images and start OCR processing</p>
         </div>
-        <div className="upload-actions">
-          <button
-            className="btn btn-primary"
-            onClick={handleUpload}
-            disabled={uploading}
-          >
-            {uploading ? '⏳ Испраќам...' : '🚀 Започни OCR'}
-          </button>
-          <button
-            className="btn btn-secondary"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            ➕ Додади уште слики
-          </button>
+
+        <div className="upload-form">
+          <div className="form-group">
+            <label>Book Name</label>
+            <input
+              type="text"
+              value={bookName}
+              onChange={(e) => setBookName(e.target.value)}
+              placeholder="e.g., macedonian-novel"
+              className="form-input"
+              disabled={uploading}
+            />
+          </div>
+
+          <div className="form-group">
+            <div
+              className="upload-area"
+              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const droppedFiles = Array.from(e.dataTransfer.files);
+                setFiles(prev => [...prev, ...droppedFiles]);
+              }}
+            >
+              <span className="upload-icon">
+                <ImageUp size={40} strokeWidth={1.8} />
+              </span>
+              <span className="upload-title">Click or drag images here</span><br/>
+              <small className="upload-hint">page_001.jpg, page_002.png...</small>
+            </div>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              multiple
+              accept="image/*"
+              className="file-input"
+              onChange={handleFileSelect}
+            />
+          </div>
+
+          <div className="selected-files">
+            {files.map((f, i) => (
+              <span key={i} className="file-badge">
+                {f.name}
+                <span className="remove-file" onClick={() => removeFile(i)}>×</span>
+              </span>
+            ))}
+          </div>
+
+          <div className="upload-actions">
+            <button
+              className="btn btn-primary"
+              onClick={handleUpload}
+              disabled={uploading}
+              type="button"
+            >
+              {uploading ? 'Uploading...' : 'Start OCR'}
+            </button>
+
+            <button
+              className="btn btn-secondary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              type="button"
+            >
+              Add More Images
+            </button>
+          </div>
         </div>
-      </div>
-      {jobId && (
-        <ProgressBar progress={progress} status={status} processed={processed} total={total} />
-      )}
-    </section>
+
+        {jobId && (
+          <ProgressBar progress={progress} status={status} processed={processed} total={total} />
+        )}
+      </section>
+    </>
   );
 }
