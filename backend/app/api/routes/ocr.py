@@ -4,7 +4,12 @@ from backend.app.schemas.job import BatchUploadResponse
 from backend.app.schemas.ocr import OCRResponse
 from backend.app.services.file_service import extract_page_number_from_filename
 from backend.app.services.job_service import create_job
-from backend.app.services.ocr_service import process_batch_images, process_uploaded_image
+from backend.app.services.ocr_service import (
+    prepare_pdf_pages,
+    process_batch_images,
+    process_batch_pdf_pages,
+    process_uploaded_image,
+)
 
 router = APIRouter(prefix="/ocr", tags=["ocr"])
 
@@ -74,5 +79,33 @@ async def batch_upload_images(
         job_id=job["job_id"],
         book_name=book_name,
         total_files=len(prepared_files),
+        status=job["status"],
+    )
+
+
+@router.post("/upload-pdf", response_model=BatchUploadResponse)
+async def upload_pdf(
+    background_tasks: BackgroundTasks,
+    book_name: str = Form(...),
+    file: UploadFile = File(...),
+) -> BatchUploadResponse:
+    if not book_name.strip():
+        raise HTTPException(status_code=400, detail="Book name is required.")
+
+    pages_data = await prepare_pdf_pages(file=file, book_name=book_name)
+
+    job = create_job(book_name=book_name, total_files=len(pages_data))
+
+    background_tasks.add_task(
+        process_batch_pdf_pages,
+        job["job_id"],
+        book_name,
+        pages_data,
+    )
+
+    return BatchUploadResponse(
+        job_id=job["job_id"],
+        book_name=book_name,
+        total_files=len(pages_data),
         status=job["status"],
     )

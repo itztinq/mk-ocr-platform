@@ -1,6 +1,7 @@
 from pathlib import Path
 import io
 import re
+import fitz
 
 from PIL import Image
 
@@ -123,7 +124,6 @@ def save_corrected_page_text(book_name: str, page_number: int, corrected_text: s
         "saved_path": str(corrected_file_path.relative_to(PROJECT_ROOT)),
     }
 
-# Помошна функција за правилно нумеричко сортирање
 def _extract_page_num_from_txt_name(path: Path) -> int:
     match = re.search(r"page_(\d{3,})", path.name)
     if match:
@@ -203,3 +203,57 @@ def get_book_output_file(file_type: str, book_name: str) -> Path:
         raise ValueError("Invalid book file type. Use 'raw' or 'corrected'.")
 
     return file_path
+
+def extract_images_from_pdf(
+    book_name: str,
+    pdf_bytes: bytes,
+    dpi: int = 300,
+) -> list[dict]:
+    safe_book_name = sanitize_stem(book_name)
+
+    if not pdf_bytes:
+        raise ValueError("Uploaded PDF is empty.")
+
+    book_images_dir = IMAGES_DIR / safe_book_name
+    book_images_dir.mkdir(parents=True, exist_ok=True)
+
+    results = []
+
+    try:
+        pdf_doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+    except Exception as exc:
+        raise ValueError("Invalid PDF file.") from exc
+
+    if pdf_doc.page_count == 0:
+        raise ValueError("PDF contains no pages.")
+
+    zoom = dpi / 72
+    matrix = fitz.Matrix(zoom, zoom)
+
+    for index in range(pdf_doc.page_count):
+        page_number = index + 1
+        page_stem = format_page_stem(page_number)
+        image_path = book_images_dir / f"{page_stem}.png"
+
+        for existing_file in book_images_dir.glob(f"{page_stem}.*"):
+            existing_file.unlink()
+
+        page = pdf_doc.load_page(index)
+        pix = page.get_pixmap(matrix=matrix, alpha=False)
+        pix.save(str(image_path))
+
+        image_bytes = image_path.read_bytes()
+
+        results.append(
+            {
+                "filename": image_path.name,
+                "page_number": page_number,
+                "content_type": "image/png",
+                "content": image_bytes,
+                "page_image_path": image_path.relative_to(PROJECT_ROOT).as_posix(),
+                "page_image_url": f"/images/{safe_book_name}/{image_path.name}",
+            }
+        )
+
+    pdf_doc.close()
+    return results

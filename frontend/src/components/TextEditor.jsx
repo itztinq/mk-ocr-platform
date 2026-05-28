@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
+import { downloadBookTxtApi } from '../api';
 import TabBar from './TabBar';
 
 export default function TextEditor() {
   const { t } = useTranslation();
   const {
+    book,
     pageTexts,
     setPageTexts,
     activeTab,
@@ -30,17 +32,55 @@ export default function TextEditor() {
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
-  const handleDownload = () => {
+  const handleDownloadPage = () => {
     const text = pageTexts[activeTab] || '';
-    if (!text) return;
+    if (!text || !activePage) return;
 
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `page_${String(activePage).padStart(3, '0')}_${activeTab}.txt`;
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadBook = async () => {
+    if (!book) return;
+
+    try {
+      const response = await downloadBookTxtApi(book);
+      const url = URL.createObjectURL(response.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${book}_corrected.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      let errorMessage = err.message;
+
+      if (err.response?.data instanceof Blob) {
+        try {
+          const text = await err.response.data.text();
+          const parsed = JSON.parse(text);
+          errorMessage = parsed.detail || err.message;
+        } catch {
+          errorMessage = err.message;
+        }
+      } else {
+        errorMessage = err.response?.data?.detail || err.message;
+      }
+
+      setSaveStatus({
+        type: 'error',
+        message: `${t('uploadError')}: ${errorMessage}`,
+      });
+      setTimeout(() => setSaveStatus(null), 3000);
+    }
   };
 
   const handleSave = async () => {
@@ -83,8 +123,12 @@ export default function TextEditor() {
             {t('copy')}
           </button>
 
-          <button className="btn btn-secondary" onClick={handleDownload} type="button">
-            {t('download')}
+          <button className="btn btn-secondary" onClick={handleDownloadPage} type="button">
+            {t('downloadPage')}
+          </button>
+
+          <button className="btn btn-secondary" onClick={handleDownloadBook} type="button">
+            {t('downloadBook')}
           </button>
 
           {isEditable && (
