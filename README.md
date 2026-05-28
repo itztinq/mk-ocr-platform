@@ -6,10 +6,10 @@
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)
 ![Tesseract](https://img.shields.io/badge/Tesseract-OCR-3B3B3B?logo=tesseract&logoColor=white)
 
-**AI-assisted OCR platform for Macedonian book pages.** Upload scanned images, run OCR with preprocessing, review and correct text, and export cleaned results.
+**OCR platform for Macedonian book pages.** Upload scanned images, run OCR with preprocessing, review and correct text, and export cleaned results.
 
 ## Overview
-Macedonian OCR Platform turns scanned book pages into editable text while keeping the review process simple. It is built for teams and individuals digitizing Macedonian-language archives, books, and printed documents that need careful human correction after OCR.
+Macedonian OCR Platform turns scanned book/document pages into editable text while keeping the review process simple. It is built for teams and individuals digitizing Macedonian-language archives, books, and printed documents that need careful human correction after OCR.
 
 The backend focuses on reliable preprocessing, OCR extraction, and filesystem-based outputs. The frontend provides a bilingual (EN/MK) review interface with per-page navigation, correction tools, and download options. The goal is practical, repeatable digitization without complex infrastructure.
 
