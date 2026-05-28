@@ -23,7 +23,7 @@
   margin-bottom: 1rem;
   border: 1px solid var(--border);
   border-radius: 14px;
-  background: linear-gradient(180deg, #f8fbff 0%, #f3f7fb 100%);
+  background: var(--how-it-works-bg);
   box-shadow: none;
 }
 
@@ -60,7 +60,7 @@
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: white;
+  background: var(--how-step-icon-bg);
   border: 1px solid var(--border);
   color: var(--primary);
   display: inline-flex;
@@ -99,7 +99,8 @@
   border: 2px solid var(--border);
   border-radius: 8px;
   font-size: 1rem;
-  background: var(--bg);
+  background: var(--input-bg);
+  color: var(--text);
   min-height: 52px;
 }
 
@@ -229,7 +230,7 @@
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #475569;
+  background: var(--button-secondary-hover);
 }
 
 .btn-success {
@@ -238,7 +239,7 @@
 }
 
 .btn-success:hover {
-  background: #059669;
+  background: var(--button-success-hover);
 }
 
 .btn svg {
@@ -273,7 +274,7 @@
 
 .progress-bar {
   height: 8px;
-  background: #e2e8f0;
+  background: var(--progress-track);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -383,13 +384,13 @@
 }
 
 .tab-btn:hover {
-  background: #f1f5f9;
+  background: var(--surface-3);
 }
 
 .tab-btn.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
-  background: white;
+  background: var(--card-bg);
   font-weight: 600;
 }
 
@@ -409,7 +410,7 @@
   font-size: 0.95rem;
   line-height: 1.6;
   resize: none;
-  background: white;
+  background: var(--editor-bg);
   color: var(--text);
   min-height: 400px;
 }
@@ -419,8 +420,8 @@
 }
 
 #textEditor[readonly] {
-  background: #fafbfc;
-  color: #475569;
+  background: var(--editor-readonly-bg);
+  color: var(--editor-readonly-text);
   cursor: default;
 }
 
@@ -444,7 +445,7 @@
     align-items: stretch;
   }
 
-  .editor-toolbar .btn-toolbar,
+  .editor-toolbar .btn,
   .editor-toolbar .btn-success {
     width: 100%;
     justify-content: center;
@@ -481,7 +482,7 @@
 
 .image-container {
   height: auto;
-  background: #1e293b;
+  background: var(--image-panel-bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   display: flex;
@@ -501,7 +502,7 @@
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
-  color: #64748b;
+  color: var(--image-placeholder);
   font-size: 1.1rem;
 }
 
@@ -526,7 +527,8 @@
   padding: 0.75rem 1.25rem;
   border: 2px solid var(--border);
   border-radius: 8px;
-  background: white;
+  background: var(--card-bg);
+  color: var(--text);
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition);
