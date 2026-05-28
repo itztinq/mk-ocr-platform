@@ -525,7 +525,7 @@
 
 .nav-btn {
   padding: 0.75rem 1.25rem;
-  border: 2px solid var(--border);
+  border: 2px solid var(--border-darker);
   border-radius: 8px;
   background: var(--card-bg);
   color: var(--text);
@@ -593,7 +593,8 @@
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  background: white;
+  background: var(--input-bg);
+  color: var(--text);
   flex-shrink: 0;
 }
 
@@ -788,6 +789,7 @@ img {
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
     padding: 0.75rem;
+    grid-auto-flow: dense;
   }
 
   .page-indicator {
