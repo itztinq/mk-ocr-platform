@@ -1,0 +1,75 @@
+{
+  "appTitle": "Macedonian OCR",
+  "appSubtitle": "Convert scanned documents, screenshots, and images in Macedonian language into editable text formats.",
+  "footerTitle": "Macedonian OCR Platform",
+
+  "darkMode": "Dark mode",
+  "lightMode": "Light mode",
+  "english": "EN",
+  "macedonian": "MK",
+
+  "howItWorks": "How it works",
+  "howItWorksText": "Upload scanned pages, review the extracted text, correct any OCR errors, and download the final cleaned version.",
+  "stepUpload": "Upload pages",
+  "stepUploadText": "Add one or more scanned images with the correct page filename format.",
+  "stepReview": "Review OCR",
+  "stepReviewText": "Open each page, compare the OCR text with the scanned image, and inspect the result.",
+  "stepCorrect": "Correct and export",
+  "stepCorrectText": "Edit mistakes, save corrections, then copy or download the cleaned text.",
+
+  "uploadImages": "Upload Images",
+  "uploadSubtitle": "Select multiple images and start OCR processing",
+  "bookName": "Book Name",
+  "enterBookName": "Enter book name",
+  "bookNameExample": "e.g., macedonian-novel",
+  "clickOrDrag": "Click or drag images here",
+  "fileHint": "page_001.jpg, page_002.png...",
+  "startOcr": "Start OCR",
+  "uploading": "Uploading...",
+
+  "addMoreImages": "Add More Images",
+  "enterBookNameAlert": "Enter book name",
+  "selectAtLeastOneImage": "Select at least one image",
+  "invalidName": "Invalid name",
+  "mustBePageFormat": "Must be page_001.jpg etc.",
+  "uploadError": "Error",
+  "processingError": "Error during processing",
+  "unknownError": "Unknown error",
+
+  "load": "Load",
+  "new": "New",
+  "addPages": "Add Pages",
+  "page": "Page",
+  "of": "of",
+  "addingPages": "Adding pages...",
+  "invalidFileName": "Invalid file name",
+
+  "previousPage": "Previous page",
+  "nextPage": "Next page",
+  "goToPage": "Go to page",
+
+  "completed": "Completed",
+  "completedWithErrors": "Completed with errors",
+  "processing": "Processing...",
+  "filesCount": "files",
+
+  "cleaned": "Cleaned",
+  "rawOcr": "Raw OCR",
+  "corrected": "Corrected",
+
+  "copied": "Copied!",
+  "saved": "Saved",
+  "saveCorrections": "Save corrections",
+  "copy": "Copy",
+  "download": "Download",
+  "selectPage": "Select page",
+  "ocrTextPlaceholder": "OCR text will appear here...",
+
+  "loadingImagePreview": "Loading image preview...",
+  "failedToLoadImagePreview": "Failed to load image preview",
+  "imagePreviewWillAppear": "Image preview will appear here",
+  "scannedDocumentPage": "Scanned document page",
+
+  "openMenu": "Open menu",
+  "closeMenu": "Close menu"
+}

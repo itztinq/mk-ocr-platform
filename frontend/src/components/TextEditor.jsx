@@ -1,11 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import TabBar from './TabBar';
 
 export default function TextEditor() {
-  const { pageTexts, setPageTexts, activeTab, setActiveTab, activePage, book, saveCorrectedText, loadingPage } = useAppContext();
-  const [saveStatus, setSaveStatus] = useState(null); // { type: 'success'/'error', message }
+  const { t } = useTranslation();
+  const {
+    pageTexts,
+    setPageTexts,
+    activeTab,
+    setActiveTab,
+    activePage,
+    saveCorrectedText,
+    loadingPage,
+  } = useAppContext();
 
+  const [saveStatus, setSaveStatus] = useState(null);
   const isEditable = activeTab === 'corrected';
 
   const handleTextChange = (e) => {
@@ -13,16 +23,17 @@ export default function TextEditor() {
     setPageTexts(e.target.value);
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     const text = pageTexts[activeTab] || '';
-    navigator.clipboard.writeText(text);
-    setSaveStatus({ type: 'success', message: 'Copied!' });
+    await navigator.clipboard.writeText(text);
+    setSaveStatus({ type: 'success', message: t('copied') });
     setTimeout(() => setSaveStatus(null), 2000);
   };
 
   const handleDownload = () => {
     const text = pageTexts[activeTab] || '';
     if (!text) return;
+
     const blob = new Blob([text], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -35,42 +46,54 @@ export default function TextEditor() {
   const handleSave = async () => {
     try {
       await saveCorrectedText();
-      setSaveStatus({ type: 'success', message: 'Saved' });
+      setSaveStatus({ type: 'success', message: t('saved') });
     } catch (err) {
-      setSaveStatus({ type: 'error', message: 'Error: ' + (err.response?.data?.detail || err.message) });
+      setSaveStatus({
+        type: 'error',
+        message: `${t('uploadError')}: ${err.response?.data?.detail || err.message}`,
+      });
     }
     setTimeout(() => setSaveStatus(null), 3000);
   };
 
-  if (!activePage) return <div className="editor-container"><textarea readOnly placeholder="Select page" /></div>;
+  if (!activePage) {
+    return (
+      <div className="editor-container">
+        <textarea readOnly placeholder={t('selectPage')} />
+      </div>
+    );
+  }
 
   return (
     <>
       <TabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
       <div className="editor-container">
         <textarea
           id="textEditor"
           value={pageTexts[activeTab] || ''}
           onChange={handleTextChange}
           readOnly={!isEditable}
-          placeholder="OCR text will appear here..."
+          placeholder={t('ocrTextPlaceholder')}
           disabled={loadingPage}
         />
+
         <div className="editor-toolbar">
           <button className="btn btn-secondary" onClick={handleCopy} type="button">
-            Copy
+            {t('copy')}
           </button>
 
           <button className="btn btn-secondary" onClick={handleDownload} type="button">
-            Download
+            {t('download')}
           </button>
 
           {isEditable && (
             <button className="btn btn-success" onClick={handleSave} type="button">
-              Save corrections
+              {t('saveCorrections')}
             </button>
           )}
         </div>
+
         {saveStatus && (
           <div className={`save-status ${saveStatus.type}`}>
             {saveStatus.message}

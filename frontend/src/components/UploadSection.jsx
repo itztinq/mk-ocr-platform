@@ -1,11 +1,13 @@
 import { useState, useRef, useCallback } from 'react';
-import { Upload, ImageUp, ScanText, FileEdit, Download } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Upload, ImageUp, ScanText, FileEdit } from 'lucide-react';
 import { uploadBatch } from '../api';
 import { useAppContext } from '../context/AppContext';
 import useJobPolling from '../hooks/useJobPolling';
 import ProgressBar from './ProgressBar';
 
 export default function UploadSection({ onBookProcessed }) {
+  const { t } = useTranslation();
   const { loadBookPages } = useAppContext();
   const [bookName, setBookName] = useState('');
   const [files, setFiles] = useState([]);
@@ -18,17 +20,17 @@ export default function UploadSection({ onBookProcessed }) {
       await loadBookPages(bookName);
       onBookProcessed();
     } else {
-      alert('Error during processing: ' + (job.errors[0] || 'Unknown error'));
+      alert(`${t('processingError')}: ${job.errors[0] || t('unknownError')}`);
     }
     setUploading(false);
     setJobId(null);
-  }, [bookName, loadBookPages, onBookProcessed]);
+  }, [bookName, loadBookPages, onBookProcessed, t]);
 
   const { progress, status, processed, total } = useJobPolling(jobId, handleJobComplete);
 
   const handleFileSelect = (e) => {
     const selected = Array.from(e.target.files);
-    setFiles(prev => [...prev, ...selected]);
+    setFiles((prev) => [...prev, ...selected]);
     e.target.value = '';
   };
 
@@ -37,19 +39,19 @@ export default function UploadSection({ onBookProcessed }) {
   };
 
   const handleUpload = async () => {
-    if (!bookName.trim()) return alert('Enter book name');
-    if (files.length === 0) return alert('Select at least one image');
+    if (!bookName.trim()) return alert(t('enterBookNameAlert'));
+    if (files.length === 0) return alert(t('selectAtLeastOneImage'));
 
-    for (let f of files) {
+    for (const f of files) {
       if (!/^page_\d{3,}\.(jpg|jpeg|png|webp|bmp|tiff)$/i.test(f.name)) {
-        alert(`Invalid name: "${f.name}". Must be page_001.jpg etc.`);
+        alert(`${t('invalidName')}: "${f.name}". ${t('mustBePageFormat')}`);
         return;
       }
     }
 
     const formData = new FormData();
     formData.append('book_name', bookName);
-    files.forEach(f => formData.append('files', f));
+    files.forEach((f) => formData.append('files', f));
 
     setUploading(true);
 
@@ -57,7 +59,7 @@ export default function UploadSection({ onBookProcessed }) {
       const res = await uploadBatch(formData);
       setJobId(res.data.job_id);
     } catch (err) {
-      alert('Error: ' + (err.response?.data?.detail || err.message));
+      alert(`${t('uploadError')}: ${err.response?.data?.detail || err.message}`);
       setUploading(false);
     }
   };
@@ -66,11 +68,8 @@ export default function UploadSection({ onBookProcessed }) {
     <>
       <section className="how-it-works">
         <div className="section-header">
-          <h2>How it works</h2>
-          <p>
-            Upload scanned pages, review the extracted text, correct any OCR errors,
-            and download the final cleaned version.
-          </p>
+          <h2>{t('howItWorks')}</h2>
+          <p>{t('howItWorksText')}</p>
         </div>
 
         <div className="how-it-works-grid">
@@ -78,24 +77,24 @@ export default function UploadSection({ onBookProcessed }) {
             <div className="how-step-icon">
               <Upload size={18} strokeWidth={2} />
             </div>
-            <h3>Upload pages</h3>
-            <p>Add one or more scanned images with the correct page filename format.</p>
+            <h3>{t('stepUpload')}</h3>
+            <p>{t('stepUploadText')}</p>
           </div>
 
           <div className="how-step">
             <div className="how-step-icon">
               <ScanText size={18} strokeWidth={2} />
             </div>
-            <h3>Review OCR</h3>
-            <p>Open each page, compare the OCR text with the scanned image, and inspect the result.</p>
+            <h3>{t('stepReview')}</h3>
+            <p>{t('stepReviewText')}</p>
           </div>
 
           <div className="how-step">
             <div className="how-step-icon">
               <FileEdit size={18} strokeWidth={2} />
             </div>
-            <h3>Correct and export</h3>
-            <p>Edit mistakes, save corrections, then copy or download the cleaned text.</p>
+            <h3>{t('stepCorrect')}</h3>
+            <p>{t('stepCorrectText')}</p>
           </div>
         </div>
       </section>
@@ -104,19 +103,19 @@ export default function UploadSection({ onBookProcessed }) {
         <div className="section-header">
           <h2 className="section-title-with-icon">
             <Upload size={20} strokeWidth={2} />
-            <span>Upload Images</span>
+            <span>{t('uploadImages')}</span>
           </h2>
-          <p>Select multiple images and start OCR processing</p>
+          <p>{t('uploadSubtitle')}</p>
         </div>
 
         <div className="upload-form">
           <div className="form-group">
-            <label>Book Name</label>
+            <label>{t('bookName')}</label>
             <input
               type="text"
               value={bookName}
               onChange={(e) => setBookName(e.target.value)}
-              placeholder="e.g., macedonian-novel"
+              placeholder={t('bookNameExample')}
               className="form-input"
               disabled={uploading}
             />
@@ -130,14 +129,14 @@ export default function UploadSection({ onBookProcessed }) {
               onDrop={(e) => {
                 e.preventDefault();
                 const droppedFiles = Array.from(e.dataTransfer.files);
-                setFiles(prev => [...prev, ...droppedFiles]);
+                setFiles((prev) => [...prev, ...droppedFiles]);
               }}
             >
               <span className="upload-icon">
                 <ImageUp size={40} strokeWidth={1.8} />
               </span>
-              <span className="upload-title">Click or drag images here</span><br/>
-              <small className="upload-hint">page_001.jpg, page_002.png...</small>
+              <span className="upload-title">{t('clickOrDrag')}</span><br/>
+              <small className="upload-hint">{t('fileHint')}</small>
             </div>
 
             <input
@@ -166,7 +165,7 @@ export default function UploadSection({ onBookProcessed }) {
               disabled={uploading}
               type="button"
             >
-              {uploading ? 'Uploading...' : 'Start OCR'}
+              {uploading ? t('uploading') : t('startOcr')}
             </button>
 
             <button
@@ -175,7 +174,7 @@ export default function UploadSection({ onBookProcessed }) {
               disabled={uploading}
               type="button"
             >
-              Add More Images
+              {t('addMoreImages')}
             </button>
           </div>
         </div>

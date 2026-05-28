@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function NavigationBar({ onPrev, onNext, onGo, currentIndex, totalPages, activePage }) {
+  const { t } = useTranslation();
   const [inputVal, setInputVal] = useState(activePage || '');
 
   useEffect(() => {
@@ -19,15 +21,15 @@ export default function NavigationBar({ onPrev, onNext, onGo, currentIndex, tota
         className="nav-btn nav-btn-icon"
         onClick={onPrev}
         disabled={currentIndex <= 0}
-        aria-label="Previous page"
-        title="Previous page"
+        aria-label={t('previousPage')}
+        title={t('previousPage')}
       >
         ←
       </button>
 
       <div className="page-indicator page-indicator-compact">
         <span className="page-pill">
-          Page <strong>{currentIndex + 1}</strong> / {totalPages}
+          {t('page')} <strong>{currentIndex + 1}</strong> / {totalPages}
         </span>
 
         <input
@@ -39,7 +41,7 @@ export default function NavigationBar({ onPrev, onNext, onGo, currentIndex, tota
           onChange={(e) => setInputVal(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleGo()}
           onBlur={handleGo}
-          aria-label="Go to page"
+          aria-label={t('goToPage')}
         />
       </div>
 
@@ -47,8 +49,8 @@ export default function NavigationBar({ onPrev, onNext, onGo, currentIndex, tota
         className="nav-btn nav-btn-icon"
         onClick={onNext}
         disabled={currentIndex >= totalPages - 1}
-        aria-label="Next page"
-        title="Next page"
+        aria-label={t('nextPage')}
+        title={t('nextPage')}
       >
         →
       </button>
