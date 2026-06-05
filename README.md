@@ -6,16 +6,18 @@
 ![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)
 ![Tesseract](https://img.shields.io/badge/Tesseract-OCR-3B3B3B?logo=tesseract&logoColor=white)
 
-**OCR platform for Macedonian book pages.** Upload scanned images, run OCR with preprocessing, review and correct text, and export cleaned results.
+**OCR platform for Macedonian book pages.** Upload scanned images or PDFs, run OCR with preprocessing, review and correct text, and export cleaned results.
 
 ## Overview
 Macedonian OCR Platform turns scanned book/document pages into editable text while keeping the review process simple. It is built for teams and individuals digitizing Macedonian-language archives, books, and printed documents that need careful human correction after OCR.
 
-The backend focuses on reliable preprocessing, OCR extraction, and filesystem-based outputs. The frontend provides a bilingual (EN/MK) review interface with per-page navigation, correction tools, and download options. The goal is practical, repeatable digitization without complex infrastructure.
+The backend focuses on reliable preprocessing, OCR extraction, PDF page rendering, and filesystem-based outputs. The frontend provides a bilingual (EN/MK) review interface with per-page navigation, correction tools, upload progress, and download options. The goal is practical, repeatable digitization without complex infrastructure.
 
 ## Core Features
 ### OCR Processing
+- **Single-image OCR** — OCR one uploaded page and return raw, cleaned, and confidence data immediately.
 - **Batch OCR jobs** — Upload multiple pages and process them in a background task with job progress.
+- **PDF upload support** — Upload a PDF, render each page to images with PyMuPDF, and OCR the extracted pages.
 - **Image preprocessing** — Adaptive thresholding and denoising before OCR to improve recognition.
 - **Confidence signals** — Average confidence and suspicious token detection from Tesseract data.
 
@@ -23,6 +25,7 @@ The backend focuses on reliable preprocessing, OCR extraction, and filesystem-ba
 - **Tabbed text views** — Switch between raw, cleaned, and corrected text per page.
 - **Inline corrections** — Edit and save corrected text back to the server.
 - **Page status tracking** — Mark pages as pending, in review, or done.
+- **Page-level downloads** — Download raw, cleaned, or corrected text for any page.
 
 ### Export System
 - **Per-page outputs** — Raw and cleaned OCR files per page.
@@ -37,6 +40,7 @@ The backend focuses on reliable preprocessing, OCR extraction, and filesystem-ba
 ### File Management
 - **Strict naming format** — Enforces `page_001.jpg` style filenames.
 - **Static image serving** — Uploaded images are served from `/images/...`.
+- **Sanitized book names** — Book folders and output files are normalized before being written to disk.
 
 ## Architecture
 The system is split into a React frontend and a FastAPI backend. OCR runs server-side, while the frontend polls job status and drives the correction workflow.
@@ -55,7 +59,9 @@ Text Cleanup + Confidence Scoring
 Filesystem Outputs (raw/cleaned/corrected/export)
 ```
 
-**Job handling:** `/ocr/batch-upload` creates an in-memory job and processes pages in a `BackgroundTasks` loop. Progress is polled from the frontend every 1.5s.
+**Job handling:** `/ocr/batch-upload` and `/ocr/upload-pdf` create an in-memory job and process pages in a `BackgroundTasks` loop. Progress is polled from the frontend every 1.5s.
+
+**PDF handling:** PDF uploads are rendered page-by-page with PyMuPDF (`fitz`) into PNG images before OCR begins.
 
 ## Tech Stack
 | Layer | Technology | Purpose |
@@ -63,6 +69,7 @@ Filesystem Outputs (raw/cleaned/corrected/export)
 | Language | Python 3 | Backend services and OCR processing |
 | API | FastAPI + Uvicorn | HTTP API and static file hosting |
 | OCR Engine | Tesseract OCR | Text extraction (`mkd` language) |
+| PDF Rendering | PyMuPDF (`fitz`) | Convert PDF pages into images |
 | Image Processing | OpenCV, Pillow, NumPy | Preprocessing and image handling |
 | Frontend | React 19 + Vite | Review and correction UI |
 | i18n | i18next | English/Macedonian translations |
@@ -129,15 +136,16 @@ npm run dev
 Open `http://localhost:5173` for the UI. API docs are available at `http://127.0.0.1:8000/docs`.
 
 > [!TIP]
-> Use filenames like `page_001.jpg` and provide a book name. Outputs are stored under `images/`, `ocr_output/`, and `text/`.
+> Use filenames like `page_001.jpg` for image batches and provide a book name. You can also upload a PDF, which will be split into page images automatically. Outputs are stored under `images/`, `ocr_output/`, and `text/`.
 
 ## OCR Workflow
-1. **Upload images** — Send a book name and multiple `page_###` images to `/ocr/batch-upload`.
-2. **Preprocessing** — Images are denoised and adaptively thresholded.
-3. **OCR execution** — Tesseract extracts Macedonian text.
-4. **Confidence scoring** — Average confidence and suspicious tokens are computed.
-5. **Text correction** — The UI loads raw/cleaned text and lets you save corrections.
-6. **Export generation** — Book-level raw/corrected and combined exports are written.
+1. **Upload images or PDF** — Send a book name and multiple `page_###` images to `/ocr/batch-upload`, or upload a PDF to `/ocr/upload-pdf`.
+2. **Page preparation** — Images are validated and PDFs are rendered into per-page PNGs before OCR.
+3. **Preprocessing** — Pages are denoised and adaptively thresholded.
+4. **OCR execution** — Tesseract extracts Macedonian text.
+5. **Confidence scoring** — Average confidence and suspicious tokens are computed.
+6. **Text correction** — The UI loads raw/cleaned/corrected text, lets you update page status, and save corrections.
+7. **Export generation** — Book-level raw/cleaned/corrected and combined exports are written.
 
 ## API Documentation
 Key endpoints (see `/docs` for full OpenAPI):
@@ -147,6 +155,7 @@ Key endpoints (see `/docs` for full OpenAPI):
 | GET | `/health` | Health check |
 | POST | `/ocr/upload-image` | OCR a single image (multipart) |
 | POST | `/ocr/batch-upload` | OCR multiple pages, returns a job |
+| POST | `/ocr/upload-pdf` | Upload a PDF, render pages, and queue OCR as a job |
 | GET | `/jobs/{job_id}` | Get job status and progress |
 | GET | `/books/{book}/pages` | List pages for a book |
 | GET | `/books/{book}/pages/{page}` | Get page detail + text blocks |
@@ -170,9 +179,11 @@ curl -X POST http://127.0.0.1:8000/ocr/batch-upload \
 Outputs are stored on disk for easy inspection and reuse:
 
 - `images/<book>/page_###.<ext>` — Uploaded page images
+- `images/<book>/page_###.png` — Pages rendered from uploaded PDFs
 - `ocr_output/<book>/pages/page_###_raw.txt` — Raw OCR text per page
 - `ocr_output/<book>/pages/page_###_cleaned.txt` — Cleaned OCR text per page
 - `ocr_output/<book>_ocr_raw.txt` — Aggregated raw OCR text for a book
+- `ocr_output/<book>_ocr_cleaned.txt` — Aggregated cleaned OCR text for a book
 - `text/<book>/pages/page_###_corrected.txt` — Corrected text per page
 - `text/<book>_corrected.txt` — Aggregated corrected text for a book
 - `text/<book>/<book>_export.txt` — Export with best available text per page
@@ -181,6 +192,7 @@ Outputs are stored on disk for easy inspection and reuse:
 ## Development Notes
 - **Job state is in-memory.** Restarting the backend clears job progress.
 - **Status files are JSON.** Page status is persisted in `text_output/_status/`.
+- **Supported inputs** are JPEG, PNG, WEBP, BMP, TIFF, and PDF.
 - **Tesseract path issues** are the most common setup problem on Windows.
 - **Encoding:** All text outputs are UTF-8; keep editors configured accordingly.
 - **Performance:** OCR is CPU-bound; large batches will run sequentially.
