@@ -163,6 +163,21 @@ def rebuild_book_raw_output(book_name: str) -> dict:
         "book_raw_output_path": final_file_path.relative_to(PROJECT_ROOT).as_posix(),
     }
 
+def rebuild_book_cleaned_output(book_name: str) -> dict:
+    safe_book_name = sanitize_stem(book_name)
+
+    pages_dir = OCR_OUTPUT_DIR / safe_book_name / "pages"
+    final_file_path = OCR_OUTPUT_DIR / f"{safe_book_name}_ocr_cleaned.txt"
+
+    page_texts = _read_page_files_sorted(pages_dir, "_cleaned.txt", include_page_marker=True)
+    combined_text = "\n\n".join(page_texts).strip()
+
+    final_file_path.write_text(combined_text, encoding="utf-8")
+
+    return {
+        "book_cleaned_output_path": final_file_path.relative_to(PROJECT_ROOT).as_posix(),
+    }
+
 def rebuild_book_corrected_output(book_name: str) -> dict:
     safe_book_name = sanitize_stem(book_name)
 
@@ -197,10 +212,12 @@ def get_book_output_file(file_type: str, book_name: str) -> Path:
 
     if file_type == "raw":
         file_path = OCR_OUTPUT_DIR / f"{safe_book_name}_ocr_raw.txt"
+    elif file_type == "cleaned":
+        file_path = OCR_OUTPUT_DIR / f"{safe_book_name}_ocr_cleaned.txt"
     elif file_type == "corrected":
         file_path = TEXT_OUTPUT_DIR / f"{safe_book_name}_corrected.txt"
     else:
-        raise ValueError("Invalid book file type. Use 'raw' or 'corrected'.")
+        raise ValueError("Invalid book file type. Use 'raw' , 'cleaned' or 'corrected'.")
 
     return file_path
 

@@ -4,6 +4,7 @@ from backend.app.services.file_service import (
     extract_page_number_from_filename,
     extract_images_from_pdf,
     rebuild_book_raw_output,
+    rebuild_book_cleaned_output,
     save_page_ocr_outputs,
     save_uploaded_page_image,
 )
@@ -90,6 +91,7 @@ def process_image_bytes(
     )
 
     book_raw_output = rebuild_book_raw_output(book_name=book_name)
+    book_cleaned_output = rebuild_book_cleaned_output(book_name=book_name)
 
     return {
         "filename": filename or "uploaded-image",
@@ -109,6 +111,7 @@ def process_image_bytes(
         "raw_output_path": saved_outputs["raw_output_path"],
         "cleaned_output_path": saved_outputs["cleaned_output_path"],
         "book_raw_output_path": book_raw_output["book_raw_output_path"],
+        "book_cleaned_output_path": book_cleaned_output["book_cleaned_output_path"],
     }
 
 
