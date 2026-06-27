@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import HTTPException, UploadFile
 
 from backend.app.services.file_service import (
@@ -19,6 +21,8 @@ from backend.app.services.job_service import (
 
 from ocr_pipeline.ocr_engine import extract_text_from_image
 
+from backend.app.core.config import settings
+
 
 ALLOWED_CONTENT_TYPES = {
     "image/jpeg",
@@ -29,7 +33,7 @@ ALLOWED_CONTENT_TYPES = {
     "image/tiff",
 }
 
-OCR_LANGUAGE = "mkd"
+OCR_LANGUAGE = settings.ocr_language
 USED_PREPROCESSING = True
 
 
@@ -52,7 +56,8 @@ async def prepare_pdf_pages(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"PDF processing failed: {str(exc)}") from exc
 
-def process_image_bytes(
+
+def _process_image_bytes(
     *,
     book_name: str,
     filename: str,
@@ -122,7 +127,8 @@ async def process_uploaded_image(
     content = await file.read()
 
     try:
-        return process_image_bytes(
+        return await asyncio.to_thread(
+            _process_image_bytes,
             book_name=book_name,
             filename=file.filename or "",
             content_type=file.content_type,
@@ -137,53 +143,55 @@ async def process_uploaded_image(
         ) from exc
 
 
-def process_batch_images(job_id: str, book_name: str, files_data: list[dict]) -> None:
-    mark_job_running(job_id)
+async def process_batch_images(job_id: str, book_name: str, files_data: list[dict]) -> None:
+    await mark_job_running(job_id)
 
     try:
         for item in files_data:
             filename = item["filename"]
             page_number = item["page_number"]
 
-            mark_job_page_started(job_id, filename, page_number)
+            await mark_job_page_started(job_id, filename, page_number)
 
             try:
-                process_image_bytes(
+                await asyncio.to_thread(
+                    _process_image_bytes,
                     book_name=book_name,
                     filename=filename,
                     content_type=item["content_type"],
                     image_bytes=item["content"],
                 )
-                mark_job_page_success(job_id, filename, page_number)
+                await mark_job_page_success(job_id, filename, page_number)
             except Exception as exc:
-                mark_job_page_failed(job_id, filename, page_number, str(exc))
+                await mark_job_page_failed(job_id, filename, page_number, str(exc))
 
-        mark_job_completed(job_id)
+        await mark_job_completed(job_id)
     except Exception as exc:
-        mark_job_failed(job_id, str(exc))
+        await mark_job_failed(job_id, str(exc))
 
 
-def process_batch_pdf_pages(job_id: str, book_name: str, pages_data: list[dict]) -> None:
-    mark_job_running(job_id)
+async def process_batch_pdf_pages(job_id: str, book_name: str, pages_data: list[dict]) -> None:
+    await mark_job_running(job_id)
 
     try:
         for item in pages_data:
             filename = item["filename"]
             page_number = item["page_number"]
 
-            mark_job_page_started(job_id, filename, page_number)
+            await mark_job_page_started(job_id, filename, page_number)
 
             try:
-                process_image_bytes(
+                await asyncio.to_thread(
+                    _process_image_bytes,
                     book_name=book_name,
                     filename=filename,
                     content_type=item["content_type"],
                     image_bytes=item["content"],
                 )
-                mark_job_page_success(job_id, filename, page_number)
+                await mark_job_page_success(job_id, filename, page_number)
             except Exception as exc:
-                mark_job_page_failed(job_id, filename, page_number, str(exc))
+                await mark_job_page_failed(job_id, filename, page_number, str(exc))
 
-        mark_job_completed(job_id)
+        await mark_job_completed(job_id)
     except Exception as exc:
-        mark_job_failed(job_id, str(exc))
+        await mark_job_failed(job_id, str(exc))

@@ -5,6 +5,8 @@ import fitz
 
 from PIL import Image
 
+from backend.app.core.config import settings
+
 EXTENSION_TO_PIL_FORMAT = {
     ".jpg": "JPEG",
     ".jpeg": "JPEG",
@@ -15,10 +17,10 @@ EXTENSION_TO_PIL_FORMAT = {
     ".tiff": "TIFF",
 }
 
-PROJECT_ROOT = Path(__file__).resolve().parents[3]
-IMAGES_DIR = PROJECT_ROOT / "images"
-OCR_OUTPUT_DIR = PROJECT_ROOT / "ocr_output"
-TEXT_OUTPUT_DIR = PROJECT_ROOT / "text"
+PROJECT_ROOT = settings.project_root
+IMAGES_DIR = settings.images_dir
+OCR_OUTPUT_DIR = settings.ocr_output_dir
+TEXT_OUTPUT_DIR = settings.text_output_dir
 
 def sanitize_stem(value: str) -> str:
     if not value:

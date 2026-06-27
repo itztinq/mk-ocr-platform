@@ -1,4 +1,5 @@
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -14,7 +15,12 @@ from ocr_pipeline.text_cleaner import (
     normalize_ocr_text,
 )
 
-TESSERACT_CMD = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+_default_tesseract = (
+    r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    if sys.platform == "win32"
+    else "/usr/bin/tesseract"
+)
+TESSERACT_CMD = os.getenv("TESSERACT_CMD", _default_tesseract)
 
 if Path(TESSERACT_CMD).exists():
     pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
@@ -72,13 +78,13 @@ def extract_text_from_image(image_bytes: bytes, language: str = "mkd") -> dict:
 
         raw_text = pytesseract.image_to_string(
             temp_path,
-            lang="mkd",
+            lang=language,
             config=config,
         ).strip()
 
         data = pytesseract.image_to_data(
             temp_path,
-            lang="mkd",
+            lang=language,
             config=config,
             output_type=pytesseract.Output.DICT,
         )
@@ -91,7 +97,7 @@ def extract_text_from_image(image_bytes: bytes, language: str = "mkd") -> dict:
             "cleaned_text": cleaned_text,
             "avg_confidence": average_confidence(data),
             "suspicious_tokens": detect_suspicious_tokens(data),
-            "language_used": "mkd",
+            "language_used": language,
             "preprocessing_used": "adaptive_threshold",
         }
 

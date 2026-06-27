@@ -73,5 +73,15 @@
   "scannedDocumentPage": "Скенирана страница од документ",
 
   "openMenu": "Отвори мени",
-  "closeMenu": "Затвори мени"
+  "closeMenu": "Затвори мени",
+
+  "scanHistory": "Историја на скенирања",
+  "scanHistoryEmpty": "Сè уште нема скенирања. Прикачи го првиот документ погоре.",
+  "loadBook": "Вчитај",
+  "historyLoadError": "Неуспешно вчитување на историјата",
+  "statusQueued": "На чекање",
+  "statusRunning": "Во обработка",
+  "statusCompleted": "Завршено",
+  "statusCompletedWithErrors": "Завршено со грешки",
+  "statusFailed": "Неуспешно"
 }

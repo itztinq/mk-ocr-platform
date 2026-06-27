@@ -1,4 +1,4 @@
-from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -11,20 +11,38 @@ from backend.app.api.routes.jobs import router as jobs_router
 from backend.app.api.routes.ocr import router as ocr_router
 from backend.app.api.routes.text import router as text_router
 from backend.app.core.config import settings
+from backend.app.core.database import db
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-IMAGES_DIR = PROJECT_ROOT / "images"
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db.connect(
+        settings.mongodb_uri,
+        settings.mongodb_db_name,
+        jobs_collection=settings.mongodb_jobs_collection,
+    )
+
+    collection = db.get_jobs_collection()
+    await collection.create_index("job_id", unique=True)
+
+    yield
+
+    await db.close()
+
+
+IMAGES_DIR = settings.images_dir
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     debug=settings.debug,
+    lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -5,6 +5,7 @@ import { uploadBatch, uploadPdf } from '../api';
 import { useAppContext } from '../context/AppContext';
 import useJobPolling from '../hooks/useJobPolling';
 import ProgressBar from './ProgressBar';
+import JobHistory from './JobHistory';
 
 export default function UploadSection({ onBookProcessed }) {
   const { t } = useTranslation();
@@ -259,6 +260,13 @@ export default function UploadSection({ onBookProcessed }) {
           />
         )}
       </section>
+
+      <JobHistory onLoadBook={handleLoadBook} />
     </>
   );
+
+  function handleLoadBook(bookName) {
+    loadBookPages(bookName);
+    onBookProcessed();
+  }
 }

@@ -1,4 +1,6 @@
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, UploadFile
+import asyncio
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from backend.app.schemas.job import BatchUploadResponse
 from backend.app.schemas.ocr import OCRResponse
@@ -28,7 +30,6 @@ async def upload_image(
 
 @router.post("/batch-upload", response_model=BatchUploadResponse)
 async def batch_upload_images(
-    background_tasks: BackgroundTasks,
     book_name: str = Form(...),
     files: list[UploadFile] = File(...),
 ) -> BatchUploadResponse:
@@ -66,13 +67,14 @@ async def batch_upload_images(
 
     prepared_files.sort(key=lambda item: item["page_number"])
 
-    job = create_job(book_name=book_name, total_files=len(prepared_files))
+    job = await create_job(book_name=book_name, total_files=len(prepared_files))
 
-    background_tasks.add_task(
-        process_batch_images,
-        job["job_id"],
-        book_name,
-        prepared_files,
+    asyncio.create_task(
+        process_batch_images(
+            job["job_id"],
+            book_name,
+            prepared_files,
+        )
     )
 
     return BatchUploadResponse(
@@ -85,7 +87,6 @@ async def batch_upload_images(
 
 @router.post("/upload-pdf", response_model=BatchUploadResponse)
 async def upload_pdf(
-    background_tasks: BackgroundTasks,
     book_name: str = Form(...),
     file: UploadFile = File(...),
 ) -> BatchUploadResponse:
@@ -94,13 +95,14 @@ async def upload_pdf(
 
     pages_data = await prepare_pdf_pages(file=file, book_name=book_name)
 
-    job = create_job(book_name=book_name, total_files=len(pages_data))
+    job = await create_job(book_name=book_name, total_files=len(pages_data))
 
-    background_tasks.add_task(
-        process_batch_pdf_pages,
-        job["job_id"],
-        book_name,
-        pages_data,
+    asyncio.create_task(
+        process_batch_pdf_pages(
+            job["job_id"],
+            book_name,
+            pages_data,
+        )
     )
 
     return BatchUploadResponse(

@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import { getPageDetail } from '../api';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export default function ImageViewer() {
   const { t } = useTranslation();
   const { book, activePage, loadingPage } = useAppContext();
@@ -20,7 +22,7 @@ export default function ImageViewer() {
         if (cancelled) return;
 
         if (page.page_image_url) {
-          setImageUrl(`http://127.0.0.1:8000${page.page_image_url}`);
+          setImageUrl(`${API_BASE}${page.page_image_url}`);
         } else {
           setImageUrl('');
           setError(true);

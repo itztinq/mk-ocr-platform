@@ -73,5 +73,15 @@
   "scannedDocumentPage": "Scanned document page",
 
   "openMenu": "Open menu",
-  "closeMenu": "Close menu"
+  "closeMenu": "Close menu",
+
+  "scanHistory": "Scan History",
+  "scanHistoryEmpty": "No scans yet. Upload your first document above.",
+  "loadBook": "Load",
+  "historyLoadError": "Failed to load history",
+  "statusQueued": "Queued",
+  "statusRunning": "Running",
+  "statusCompleted": "Completed",
+  "statusCompletedWithErrors": "Completed with errors",
+  "statusFailed": "Failed"
 }

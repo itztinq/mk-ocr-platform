@@ -2,9 +2,10 @@ import json
 from pathlib import Path
 from threading import Lock
 
-from backend.app.services.file_service import PROJECT_ROOT, sanitize_stem
+from backend.app.core.config import settings
+from backend.app.services.file_service import sanitize_stem
 
-STATUS_DIR = PROJECT_ROOT / "text_output" / "_status"
+STATUS_DIR = settings.page_status_dir
 STATUS_DIR.mkdir(parents=True, exist_ok=True)
 
 LOCK = Lock()

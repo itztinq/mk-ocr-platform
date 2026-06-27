@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -6,6 +8,17 @@ class BatchUploadResponse(BaseModel):
     book_name: str
     total_files: int
     status: str
+
+
+class JobHistoryItem(BaseModel):
+    job_id: str
+    book_name: str
+    status: str
+    created_at: datetime
+
+
+class JobHistoryResponse(BaseModel):
+    jobs: list[JobHistoryItem]
 
 
 class JobPageStatus(BaseModel):

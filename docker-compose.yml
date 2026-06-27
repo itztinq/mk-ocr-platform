@@ -1,0 +1,55 @@
+services:
+
+  mongodb:
+    image: mongo:latest
+    container_name: mk-ocr-mongodb
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - mk-ocr-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: mk-ocr-backend
+    restart: unless-stopped
+    depends_on:
+      - mongodb
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017
+      - MONGODB_DB_NAME=mk_ocr_platform
+      - CORS_ORIGINS=http://localhost:80,http://localhost:5173
+      - DEBUG=false
+    volumes:
+      - ./images:/app/images
+      - ./ocr_output:/app/ocr_output
+      - ./text:/app/text
+      - ./text_output:/app/text_output
+    ports:
+      - "8000:8000"
+    networks:
+      - mk-ocr-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: mk-ocr-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    networks:
+      - mk-ocr-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  mk-ocr-network:
+    driver: bridge
