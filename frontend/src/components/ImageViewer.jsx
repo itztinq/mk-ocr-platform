@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import { getPageDetail } from '../api';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 export default function ImageViewer() {
   const { t } = useTranslation();

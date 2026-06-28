@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({ baseURL: API_BASE });
 
@@ -22,3 +22,6 @@ export const downloadBookTxtApi = (bookName) =>
   api.get(`/books/${encodeURIComponent(bookName)}/export/txt`, {
     responseType: 'blob',
   });
+
+export const deleteJob = (jobId) => api.delete(`/jobs/${jobId}`);
+export const clearJobHistory = () => api.delete('/jobs/history');

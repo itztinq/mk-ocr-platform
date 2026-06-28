@@ -125,6 +125,18 @@ async def mark_job_failed(job_id: str, detail: str) -> None:
     )
 
 
+async def delete_job(job_id: str) -> bool:
+    collection = db.get_jobs_collection()
+    result = await collection.delete_one({"job_id": job_id})
+    return result.deleted_count > 0
+
+
+async def delete_all_jobs() -> int:
+    collection = db.get_jobs_collection()
+    result = await collection.delete_many({})
+    return result.deleted_count
+
+
 async def list_jobs(limit: int = 100) -> list[dict]:
     collection = db.get_jobs_collection()
     cursor = collection.find(
