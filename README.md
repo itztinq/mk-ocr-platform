@@ -1,198 +1,240 @@
 # Macedonian OCR Platform
 
-![Python](https://img.shields.io/badge/Python-3.x-3776AB?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.x-009688?logo=fastapi&logoColor=white)
-![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Vite](https://img.shields.io/badge/Vite-6.x-646CFF?logo=vite&logoColor=white)
 ![Tesseract](https://img.shields.io/badge/Tesseract-OCR-3B3B3B?logo=tesseract&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-8-47A248?logo=mongodb&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/k3d-5.x-326CE5?logo=kubernetes&logoColor=white)
+![Argo CD](https://img.shields.io/badge/Argo_CD-2.x-EF7B4D?logo=argo&logoColor=white)
 
-**OCR platform for Macedonian book pages.** Upload scanned images or PDFs, run OCR with preprocessing, review and correct text, and export cleaned results.
-
-## Overview
-Macedonian OCR Platform turns scanned book/document pages into editable text while keeping the review process simple. It is built for teams and individuals digitizing Macedonian-language archives, books, and printed documents that need careful human correction after OCR.
-
-The backend focuses on reliable preprocessing, OCR extraction, PDF page rendering, and filesystem-based outputs. The frontend provides a bilingual (EN/MK) review interface with per-page navigation, correction tools, upload progress, and download options. The goal is practical, repeatable digitization without complex infrastructure.
+**OCR platform for Macedonian book pages.** Upload scanned images or PDFs, run OCR with preprocessing, review and correct text, and export cleaned results. Deployed on Kubernetes with a fully automated CI/CD pipeline.
 
 ## Core Features
-### OCR Processing
-- **Single-image OCR** — OCR one uploaded page and return raw, cleaned, and confidence data immediately.
-- **Batch OCR jobs** — Upload multiple pages and process them in a background task with job progress.
-- **PDF upload support** — Upload a PDF, render each page to images with PyMuPDF, and OCR the extracted pages.
-- **Image preprocessing** — Adaptive thresholding and denoising before OCR to improve recognition.
-- **Confidence signals** — Average confidence and suspicious token detection from Tesseract data.
 
-### Text Correction
-- **Tabbed text views** — Switch between raw, cleaned, and corrected text per page.
-- **Inline corrections** — Edit and save corrected text back to the server.
-- **Page status tracking** — Mark pages as pending, in review, or done.
-- **Page-level downloads** — Download raw, cleaned, or corrected text for any page.
-
-### Export System
-- **Per-page outputs** — Raw and cleaned OCR files per page.
-- **Book-level outputs** — Aggregated raw OCR and corrected book files.
-- **Manual export** — Export the best available text per page into a single file.
-
-### UI/UX
-- **Bilingual UI** — English and Macedonian localization.
-- **Light/Dark themes** — Theme toggle persisted in local storage.
-- **Keyboard navigation** — Arrow key navigation between pages in the editor.
-
-### File Management
-- **Strict naming format** — Enforces `page_001.jpg` style filenames.
-- **Static image serving** — Uploaded images are served from `/images/...`.
-- **Sanitized book names** — Book folders and output files are normalized before being written to disk.
+- **Batch OCR** — Upload multiple images or a PDF; pages are OCR'd in background jobs with real-time progress
+- **Text correction** — Tabbed raw/cleaned/corrected views with inline saving
+- **Bilingual UI** — English and Macedonian with light/dark themes
+- **MongoDB persistence** — Job history survives restarts (replaced in-memory storage)
+- **Delete history** — Individual job deletion or clear all history
+- **Export** — Download per-page or book-level text files
 
 ## Architecture
-The system is split into a React frontend and a FastAPI backend. OCR runs server-side, while the frontend polls job status and drives the correction workflow.
 
 ```
-React (Vite UI)
-      ↓
-FastAPI API + Static /images
-      ↓
-Image Preprocessing (OpenCV)
-      ↓
-Tesseract OCR (mkd)
-      ↓
-Text Cleanup + Confidence Scoring
-      ↓
-Filesystem Outputs (raw/cleaned/corrected/export)
+Browser ──http://localhost:8080──→ Traefik Ingress
+                                       │
+                          ┌────────────┼────────────┐
+                          │            │            │
+                     ┌────┴────┐  ┌───┴────┐  ┌───┴────┐
+                     │frontend │  │backend │  │mongodb │
+                     │ :80     │  │ :8000  │  │ :27017 │
+                     └─────────┘  └───┬────┘  └────────┘
+                                      │
+                               Tesseract OCR
+                               (inside backend pod)
 ```
 
-**Job handling:** `/ocr/batch-upload` and `/ocr/upload-pdf` create an in-memory job and process pages in a `BackgroundTasks` loop. Progress is polled from the frontend every 1.5s.
-
-**PDF handling:** PDF uploads are rendered page-by-page with PyMuPDF (`fitz`) into PNG images before OCR begins.
+All API calls pass through the Ingress:
+- `/api/*` → backend (prefix stripped)
+- `/images/*` → backend (serves uploaded images)
+- `/` → frontend (React SPA)
 
 ## Tech Stack
-| Layer | Technology | Purpose |
-| --- | --- | --- |
-| Language | Python 3 | Backend services and OCR processing |
-| API | FastAPI + Uvicorn | HTTP API and static file hosting |
-| OCR Engine | Tesseract OCR | Text extraction (`mkd` language) |
-| PDF Rendering | PyMuPDF (`fitz`) | Convert PDF pages into images |
-| Image Processing | OpenCV, Pillow, NumPy | Preprocessing and image handling |
-| Frontend | React 19 + Vite | Review and correction UI |
-| i18n | i18next | English/Macedonian translations |
-| HTTP Client | Axios | Frontend API requests |
+
+| Layer | Technology |
+| --- | --- |
+| Backend | FastAPI + Uvicorn + Motor (async MongoDB) |
+| Database | MongoDB 8 (StatefulSet in K8s) |
+| OCR | Tesseract 5 (mkd language) |
+| PDF | PyMuPDF (fitz) |
+| Image processing | OpenCV, Pillow |
+| Frontend | React 19 + Vite + Axios |
+| i18n | i18next (English / Macedonian) |
+| Container | Docker + Docker Compose |
+| Orchestration | Kubernetes (k3d) |
+| CI/CD | GitHub Actions + Argo CD |
+| Ingress | Traefik (k3s built-in) |
 
 ## Project Structure
+
 ```
-backend/                 # FastAPI app (routes, services, schemas)
-frontend/                # React + Vite client
-ocr_pipeline/            # OCR preprocessing and text cleanup
-images/                  # Uploaded page images (runtime output)
-ocr_output/              # Raw/cleaned OCR files (runtime output)
-text/                    # Corrected text + exports (runtime output)
-text_output/_status/     # Page status JSON files (runtime output)
-docx/                    # Empty placeholder directory
-requirements.txt         # Python dependencies
+./
+├── backend/                 # FastAPI app
+│   ├── app/
+│   │   ├── api/routes/      # Jobs, OCR, Books, Files, Text
+│   │   ├── core/            # Config, database (Motor)
+│   │   ├── schemas/         # Pydantic models
+│   │   └── services/        # Job service, OCR service, Book service
+│   └── Dockerfile
+├── frontend/                # React + Vite
+│   ├── src/
+│   │   ├── api/             # Axios client (prefixes /api)
+│   │   ├── components/      # UploadSection, JobHistory, ImageViewer, Editor
+│   │   └── context/         # AppContext (book state)
+│   ├── Dockerfile
+│   └── nginx.conf           # Serves static files only (API proxied by Ingress)
+├── ocr_pipeline/            # Tesseract preprocessing + text cleanup
+├── k8s/                     # Kubernetes manifests
+│   ├── namespace.yaml
+│   ├── ingress.yaml         # Traefik Ingress (/api + /images → backend, / → frontend)
+│   ├── mongodb/             # StatefulSet + Service + ConfigMap + Secret
+│   ├── backend/             # Deployment + Service + ConfigMap + PVC
+│   ├── frontend/            # Deployment + Service
+│   └── argocd/              # Argo CD Application manifest
+├── docker-compose.yml       # Dev: mongodb + backend + frontend
+├── .github/workflows/ci.yml # CI/CD: build, push to Docker Hub, deploy via Argo CD
+├── .env.example             # Environment variable template
+└── requirements.txt
 ```
 
-## Installation Guide
-### 1) Clone the repository
+## Quick Start — Docker Compose
+
 ```bash
-git clone https://github.com/itztinq/mk-ocr-platform.git
+# 1. Clone
+git clone https://github.com/YOUR_USERNAME/mk-ocr-platform.git
 cd mk-ocr-platform
+
+# 2. Copy env and edit if needed
+cp .env.example .env
+
+# 3. Start all services
+docker compose up -d
+
+# 4. Open the app
+open http://localhost:5173
 ```
 
-### 2) Set up Python dependencies
+## Quick Start — Kubernetes (k3d)
+
+### Prerequisites
+- [k3d](https://k3d.io/) installed
+- Docker Hub account
+
+### 1. Create the cluster
+
 ```bash
-python -m venv .venv
-.\.venv\Scripts\activate
-pip install -r requirements.txt
+k3d cluster create mk-ocr --api-port 6550 -p "8080:80@loadbalancer"
 ```
 
-### 3) Set up the frontend
+> Docker images are already available on Docker Hub as `martinnq/mk-ocr-*`.  
+> If you forked the repo, build and push your own images first, then update `k8s/*/deployment.yaml`.
+
+### 2. Create the secret files
+
 ```bash
-cd frontend
-npm install
+cp k8s/mongodb/secret.yaml.example k8s/mongodb/secret.yaml
+cp k8s/backend/secret.yaml.example k8s/backend/secret.yaml
+# Edit the passwords if desired
 ```
 
-### 4) Install Tesseract OCR + Macedonian language pack
-> [!NOTE]
-> The backend looks for `C:\Program Files\Tesseract-OCR\tesseract.exe` on Windows. On other platforms, ensure `tesseract` is available on your PATH and the `mkd` language data is installed.
+### 3. Deploy to the cluster
 
-**Windows**
-- Install Tesseract OCR and ensure the executable matches the path above, or update `ocr_pipeline/ocr_engine.py`.
-
-**Linux**
-- Install `tesseract-ocr` and the Macedonian data package (often `tesseract-ocr-mkd`).
-
-**macOS**
-- Install Tesseract with your package manager and ensure the `mkd` traineddata is available.
-
-## Running the Application
-### Backend (FastAPI)
 ```bash
-uvicorn backend.app.main:app --reload
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/mongodb/
+kubectl apply -f k8s/backend/
+kubectl apply -f k8s/frontend/
+kubectl apply -f k8s/ingress.yaml
 ```
 
-### Frontend (Vite)
+### 4. Verify
+
 ```bash
-cd frontend
-npm run dev
+kubectl get pods -n mk-ocr-app
+# Wait for all pods to be Ready, then:
+open http://localhost:8080
 ```
 
-Open `http://localhost:5173` for the UI. API docs are available at `http://127.0.0.1:8000/docs`.
+## CI/CD Pipeline
 
-> [!TIP]
-> Use filenames like `page_001.jpg` for image batches and provide a book name. You can also upload a PDF, which will be split into page images automatically. Outputs are stored under `images/`, `ocr_output/`, and `text/`.
+The `.github/workflows/ci.yml` implements a full CI/CD pipeline.
 
-## OCR Workflow
-1. **Upload images or PDF** — Send a book name and multiple `page_###` images to `/ocr/batch-upload`, or upload a PDF to `/ocr/upload-pdf`.
-2. **Page preparation** — Images are validated and PDFs are rendered into per-page PNGs before OCR.
-3. **Preprocessing** — Pages are denoised and adaptively thresholded.
-4. **OCR execution** — Tesseract extracts Macedonian text.
-5. **Confidence scoring** — Average confidence and suspicious tokens are computed.
-6. **Text correction** — The UI loads raw/cleaned/corrected text, lets you update page status, and save corrections.
-7. **Export generation** — Book-level raw/cleaned/corrected and combined exports are written.
+### CI — Build and Push
 
-## API Documentation
-Key endpoints (see `/docs` for full OpenAPI):
+Every push to `main` triggers:
+
+1. **backend** job — builds and pushes `mk-ocr-backend` to Docker Hub (`latest` + `sha-*` tags)
+2. **frontend** job — builds and pushes `mk-ocr-frontend` to Docker Hub (`latest` + `sha-*` tags)
+3. **deploy** job — updates `k8s/*/deployment.yaml` with the new SHA image tag, commits and pushes to Git
+
+### CD — Argo CD GitOps
+
+[Argo CD](https://argo-cd.readthedocs.io/) runs in the cluster and watches the Git repo. When the deploy job pushes updated manifests, Argo CD automatically syncs them to the cluster.
+
+### Setup
+
+1. Add these **GitHub Secrets** (repo → Settings → Secrets → Actions):
+
+| Secret | Value |
+|---|---|
+| `DOCKERHUB_USERNAME` | Your Docker Hub username |
+| `DOCKERHUB_TOKEN` | Docker Hub access token |
+
+2. Install Argo CD:
+
+```bash
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.12.6/manifests/install.yaml
+```
+
+3. Configure Argo CD:
+
+```bash
+# Edit k8s/argocd/application.yaml — replace YOUR_GITHUB_USERNAME
+kubectl apply -f k8s/argocd/application.yaml
+```
+
+### Argo CD UI
+
+```bash
+kubectl port-forward svc/argocd-server -n argocd 9090:80
+# Open https://localhost:9090
+# Username: admin
+# Password: kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+```
+
+## API Endpoints
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
-| GET | `/health` | Health check |
-| POST | `/ocr/upload-image` | OCR a single image (multipart) |
-| POST | `/ocr/batch-upload` | OCR multiple pages, returns a job |
-| POST | `/ocr/upload-pdf` | Upload a PDF, render pages, and queue OCR as a job |
-| GET | `/jobs/{job_id}` | Get job status and progress |
-| GET | `/books/{book}/pages` | List pages for a book |
-| GET | `/books/{book}/pages/{page}` | Get page detail + text blocks |
-| PUT | `/books/{book}/pages/{page}/corrected-text` | Save corrected text |
-| PUT | `/books/{book}/pages/{page}/status` | Update page status |
-| GET | `/books/{book}/pages/{page}/download/{kind}` | Download raw/cleaned/corrected |
-| GET | `/books/{book}/export/txt` | Export best-available text |
-| GET | `/files/download/{type}/{filename}` | Download raw/cleaned/corrected file |
-| GET | `/files/download/book/{type}/{book}` | Download book-level file |
-| POST | `/text/save-corrected` | Save corrected text (alternate payload) |
+| `GET` | `/health` | Health check |
+| `POST` | `/ocr/batch-upload` | Upload multiple images, returns a job |
+| `POST` | `/ocr/upload-pdf` | Upload PDF, renders pages, queues OCR |
+| `GET` | `/jobs/history` | List all jobs |
+| `DELETE` | `/jobs/history` | Clear all job history |
+| `GET` | `/jobs/{id}` | Get job status + progress |
+| `DELETE` | `/jobs/{id}` | Delete a single job |
+| `GET` | `/books/{book}/pages` | List pages for a book |
+| `GET` | `/books/{book}/pages/{page}` | Get page detail + text blocks |
+| `PUT` | `/books/{book}/pages/{page}/corrected-text` | Save corrected text |
+| `GET` | `/books/{book}/export/txt` | Export best-available text |
 
-**Batch upload example**
-```bash
-curl -X POST http://127.0.0.1:8000/ocr/batch-upload \
-  -F "book_name=macedonian-novel" \
-  -F "files=@page_001.jpg" \
-  -F "files=@page_002.jpg"
-```
+Full OpenAPI docs at `http://localhost:8080/api/docs` (via Ingress) or `http://127.0.0.1:8000/docs` (direct).
 
-## Output Files
-Outputs are stored on disk for easy inspection and reuse:
+## Environment Variables
 
-- `images/<book>/page_###.<ext>` — Uploaded page images
-- `images/<book>/page_###.png` — Pages rendered from uploaded PDFs
-- `ocr_output/<book>/pages/page_###_raw.txt` — Raw OCR text per page
-- `ocr_output/<book>/pages/page_###_cleaned.txt` — Cleaned OCR text per page
-- `ocr_output/<book>_ocr_raw.txt` — Aggregated raw OCR text for a book
-- `ocr_output/<book>_ocr_cleaned.txt` — Aggregated cleaned OCR text for a book
-- `text/<book>/pages/page_###_corrected.txt` — Corrected text per page
-- `text/<book>_corrected.txt` — Aggregated corrected text for a book
-- `text/<book>/<book>_export.txt` — Export with best available text per page
-- `text_output/_status/<book>.json` — Page status map (`pending`/`in_review`/`done`)
+| Variable | Default | Description |
+| --- | --- | --- |
+| `MONGODB_URI` | `mongodb://localhost:27017` | MongoDB connection string |
+| `MONGODB_DB_NAME` | `mk_ocr_platform` | Database name |
+| `CORS_ORIGINS` | `*` | Allowed CORS origins |
+| `OCR_LANGUAGE` | `mkd` | Tesseract language |
+| `TESSERACT_CMD` | platform-dependent | Path to Tesseract binary |
+| `IMAGES_DIR` | `./images` | Image storage directory |
+| `OCR_OUTPUT_DIR` | `./ocr_output` | OCR output directory |
+| `TEXT_OUTPUT_DIR` | `./text` | Corrected text directory |
 
 ## Development Notes
-- **Job state is in-memory.** Restarting the backend clears job progress.
-- **Status files are JSON.** Page status is persisted in `text_output/_status/`.
-- **Supported inputs** are JPEG, PNG, WEBP, BMP, TIFF, and PDF.
-- **Tesseract path issues** are the most common setup problem on Windows.
-- **Encoding:** All text outputs are UTF-8; keep editors configured accordingly.
-- **Performance:** OCR is CPU-bound; large batches will run sequentially.
+
+- **MongoDB** is required. For local dev without Docker, set `MONGODB_URI` in `.env` to your local MongoDB instance.
+- **Filename format** for batch uploads: `page_001.jpg`, `page_002.png`, etc. (3+ digits).
+- **Tesseract** must be installed with the `mkd` language pack.
+- **Encoding:** All text outputs are UTF-8.
+- **Performance:** OCR is CPU-bound; large batches run sequentially in background tasks.
+
+## License
+
+MIT
