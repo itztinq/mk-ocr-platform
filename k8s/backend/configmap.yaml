@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: mk-ocr-app
+data:
+  MONGODB_DB_NAME: mk_ocr_platform
+  MONGODB_JOBS_COLLECTION: jobs
+  CORS_ORIGINS: "*"
+  DEBUG: "false"
+  OCR_LANGUAGE: mkd
+  IMAGES_DIR: /app/data/images
+  OCR_OUTPUT_DIR: /app/data/ocr_output
+  TEXT_OUTPUT_DIR: /app/data/text
+  PAGE_STATUS_DIR: /app/data/text_output/_status
