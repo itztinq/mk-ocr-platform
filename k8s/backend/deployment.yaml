@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: martinnq/mk-ocr-backend:latest
+          image: martinnq/mk-ocr-backend:sha-2d9a805
           ports:
             - containerPort: 8000
           readinessProbe:

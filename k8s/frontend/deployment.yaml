@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: martinnq/mk-ocr-frontend:latest
+          image: martinnq/mk-ocr-frontend:sha-2d9a805
           ports:
             - containerPort: 80
